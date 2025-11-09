@@ -118,8 +118,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id as string
         (session.user as any).username = token.username as string
         (session.user as any).isAdmin = isAdmin
-        (session.user as any).isModerator = token.isModerator as boolean
-        (session.user as any).isPremium = token.isPremium as boolean
+        (session.user as any).isModerator = token.isModerator as boolean;
+        (session.user as any).isPremium = token.isPremium as boolean;
         // Permissions (admins get all permissions)
         (session.user as any).canCreatePages = isAdmin || (token.canCreatePages as boolean)
         (session.user as any).canEditOwnPages = isAdmin || (token.canEditOwnPages as boolean)
