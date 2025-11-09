@@ -11,7 +11,7 @@ export default function NewPagePage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [tags, setTags] = useState('')
-  const [status, setStatus] = useState<'draft' | 'published'>('draft')
+  const [status, setStatus] = useState<'draft' | 'published'>('published')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 

@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Eye, Calendar, User, Edit } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { LikeButton } from '@/components/LikeButton'
+import { Comments } from '@/components/Comments'
 
 interface PageProps {
   params: {
@@ -98,6 +100,8 @@ export default async function WikiPage({ params }: PageProps) {
             <Eye className="w-4 h-4" />
             <span>{page.views} vues</span>
           </div>
+
+          <LikeButton slug={page.slug} initialLikes={page.likes || 0} />
         </div>
 
         {page.tags && page.tags.length > 0 && (
@@ -118,6 +122,8 @@ export default async function WikiPage({ params }: PageProps) {
           className="markdown-content"
           dangerouslySetInnerHTML={{ __html: htmlContent }}
         />
+
+        <Comments slug={page.slug} session={session} />
 
         <div className="mt-12 pt-6 border-t">
           <Link
