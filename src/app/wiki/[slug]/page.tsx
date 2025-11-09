@@ -4,6 +4,8 @@ import { formatDateTime } from '@/lib/utils'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, Calendar, User, Edit } from 'lucide-react'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 interface PageProps {
   params: {
@@ -12,11 +14,14 @@ interface PageProps {
 }
 
 export default async function WikiPage({ params }: PageProps) {
+  const session = await getServerSession(authOptions)
+
   const page = await prisma.page.findUnique({
     where: { slug: params.slug },
     include: {
       author: {
         select: {
+          id: true,
           username: true,
           displayName: true,
           avatar: true,
@@ -30,7 +35,15 @@ export default async function WikiPage({ params }: PageProps) {
     },
   })
 
-  if (!page || page.status !== 'published') {
+  if (!page) {
+    notFound()
+  }
+
+  // Allow viewing if:
+  // 1. Page is published, OR
+  // 2. User is the author of the page (can see their own drafts)
+  const isAuthor = session?.user && (session.user as any).id === page.author.id.toString()
+  if (page.status !== 'published' && !isAuthor) {
     notFound()
   }
 
@@ -45,8 +58,22 @@ export default async function WikiPage({ params }: PageProps) {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-8">
+        {page.status === 'draft' && (
+          <div className="mb-4 px-4 py-2 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg">
+            <strong>Brouillon :</strong> Cette page n'est visible que par vous.
+            Changez son statut en "Publié" pour la rendre visible aux autres utilisateurs.
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-4xl font-bold">{page.title}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-bold">{page.title}</h1>
+            {page.status === 'draft' && (
+              <span className="px-3 py-1 bg-yellow-200 text-yellow-800 text-sm font-medium rounded-full">
+                Brouillon
+              </span>
+            )}
+          </div>
           <Link
             href={`/wiki/${page.slug}/edit`}
             className="flex items-center space-x-2 text-primary-600 hover:text-primary-700"
