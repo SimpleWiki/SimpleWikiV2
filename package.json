@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "npm run db:init && concurrently \"npm run dev\"",
+    "start": "concurrently \"npm run dev\"",
     "lint": "next lint",
     "reset": "node scripts/reset-db.js",
-    "init": "node scripts/init-db.js",
+    "init": "npm run db:push && node scripts/init-db.js",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
