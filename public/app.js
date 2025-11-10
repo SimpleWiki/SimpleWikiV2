@@ -19,12 +19,14 @@
       clearOverlayBounds();
       return;
     }
-    const rect = drawer.getBoundingClientRect();
-    const overlayLeft = Math.min(
+    const computedStyle = window.getComputedStyle(drawer);
+    // Ignore the translateX transition by relying on the drawer's layout offsets.
+    const drawerLeft = parseFloat(computedStyle.left) || drawer.offsetLeft || 0;
+    const drawerRight = Math.min(
       window.innerWidth,
-      Math.max(0, rect.left + rect.width),
+      Math.max(0, drawerLeft + drawer.offsetWidth),
     );
-    overlayHit.style.setProperty("--overlay-left", `${overlayLeft}px`);
+    overlayHit.style.setProperty("--overlay-left", `${drawerRight}px`);
   };
 
   const setExpanded = (expanded) => {
