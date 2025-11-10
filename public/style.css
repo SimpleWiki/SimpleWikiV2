@@ -620,6 +620,20 @@ textarea:focus {
   outline: none;
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  vertical-align: middle;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  appearance: auto;
+}
+
 .field-hint,
 .field__hint {
   font-size: 0.8rem;
