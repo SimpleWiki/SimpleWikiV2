@@ -7,6 +7,7 @@
   const historyEntries = Array.isArray(history) ? history : [];
   const historyPager = historyPagination || null;
   const historyTotal = historyPager ? historyPager.totalItems : historyEntries.length;
+  const providerLinkList = Array.isArray(providerLinks) ? providerLinks : [];
   function formatReputationStatusLabel(status) {
     if (status === 'suspicious') return t('admin.ipReputation.status.suspicious');
     if (status === 'safe') return t('admin.ipReputation.status.safe');
@@ -24,7 +25,13 @@
 
 <p class="text-muted leading-snug">
   <%= t('admin.ipReputation.intro.before') %>
-  <a href="https://ipapi.is" target="_blank" rel="noopener"><%= providerName %></a>
+  <% if (providerLinkList.length) { %>
+    <% providerLinkList.forEach((provider, index) => { %>
+      <a href="<%= provider.url %>" target="_blank" rel="noopener"><%= provider.name %></a><%= index < providerLinkList.length - 1 ? ", " : "" %>
+    <% }) %>
+  <% } else { %>
+    <span><%= providerName %></span>
+  <% } %>
   <%= t('admin.ipReputation.intro.detect') %>
   <%= t('admin.ipReputation.intro.afterPrefix') %>
   <strong><%= fmt.number(refreshIntervalHours) %>h</strong>
@@ -278,4 +285,3 @@
     <%- include('./paginationControls', { pagination: historyPager }) %>
   <% } %>
 </section>
-

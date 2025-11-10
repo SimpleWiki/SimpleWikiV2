@@ -620,7 +620,8 @@ export default {
       heading: "High-risk IP surveillance",
       intro: {
         before: "IP addresses are automatically checked via",
-        detect: " to detect VPNs, proxies, Tor networks or abusive hosting.",
+        detect:
+          " to detect VPNs, proxies, Tor networks or abusive hosting by cross-referencing multiple free APIs.",
         afterPrefix: " Checks are re-run every",
         afterSuffix: " or manually from this tab.",
       },

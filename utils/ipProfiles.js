@@ -24,6 +24,16 @@ const STOP_FORUM_SPAM_ENDPOINT =
   "https://api.stopforumspam.com/api";
 const IP_GEOLOCATION_ENDPOINT =
   process.env.IP_GEOLOCATION_ENDPOINT || "https://ipwho.is";
+const PROXY_CHECK_ENDPOINT =
+  process.env.PROXY_CHECK_ENDPOINT || "https://proxycheck.io/v2";
+const PROXY_CHECK_KEY = (() => {
+  const rawKey = process.env.PROXY_CHECK_KEY;
+  if (typeof rawKey === "string") {
+    const normalized = rawKey.trim();
+    return normalized === "" ? null : normalized;
+  }
+  return "free";
+})();
 const DEFAULT_TIMEOUT_MS = 8000;
 const configuredTimeout =
   process.env.IP_REPUTATION_TIMEOUT_MS !== undefined
@@ -61,12 +71,16 @@ function normalizeReputationSources(data = {}) {
   if (
     data &&
     typeof data === "object" &&
-    ("ipapi" in data || "stopForumSpam" in data || "ipwhois" in data)
+    ("ipapi" in data ||
+      "stopForumSpam" in data ||
+      "ipwhois" in data ||
+      "proxycheck" in data)
   ) {
     return {
       ipapi: data.ipapi || null,
       stopForumSpam: data.stopForumSpam || null,
       ipwhois: data.ipwhois || null,
+      proxycheck: data.proxycheck || null,
       errors: Array.isArray(data.errors) ? data.errors : [],
     };
   }
@@ -77,16 +91,29 @@ function computeReputationFlags(data = {}) {
   const sources = normalizeReputationSources(data);
   const ipapi = sources.ipapi || {};
   const stopForumSpam = sources.stopForumSpam || {};
+  const proxycheck = sources.proxycheck || {};
 
   const isAbuserFromStopForumSpam = Boolean(stopForumSpam.appears);
   const isAbuserFromIpapi = Boolean(ipapi?.is_abuser);
+  const normalizedProxyType =
+    typeof proxycheck.type === "string" ? proxycheck.type.toLowerCase() : "";
+  const isProxyFromProxyCheck = proxycheck.proxy === "yes";
+  const isVpnFromProxyCheck = /vpn/.test(normalizedProxyType);
+  const isTorFromProxyCheck = normalizedProxyType.includes("tor");
+  const isDatacenterFromProxyCheck =
+    /(datacenter|hosting)/.test(normalizedProxyType);
+  const riskScore = toNumber(proxycheck.risk);
+  const isAbuserFromProxyCheck = riskScore !== null && riskScore >= 60;
 
   return {
-    isVpn: Boolean(ipapi?.is_vpn),
-    isProxy: Boolean(ipapi?.is_proxy),
-    isTor: Boolean(ipapi?.is_tor),
-    isDatacenter: Boolean(ipapi?.is_datacenter),
-    isAbuser: isAbuserFromIpapi || isAbuserFromStopForumSpam,
+    isVpn: Boolean(ipapi?.is_vpn || isVpnFromProxyCheck),
+    isProxy: Boolean(ipapi?.is_proxy || isProxyFromProxyCheck),
+    isTor: Boolean(ipapi?.is_tor || isTorFromProxyCheck),
+    isDatacenter: Boolean(ipapi?.is_datacenter || isDatacenterFromProxyCheck),
+    isAbuser:
+      isAbuserFromIpapi ||
+      isAbuserFromStopForumSpam ||
+      isAbuserFromProxyCheck,
   };
 }
 
@@ -128,7 +155,10 @@ function buildReputationSummary(data, flags) {
   const ipapi = sources.ipapi || null;
   const stopForumSpam = sources.stopForumSpam || null;
   const ipwhois = sources.ipwhois || null;
-  const hasSourceData = Boolean(ipapi || stopForumSpam || ipwhois);
+  const proxycheck = sources.proxycheck || null;
+  const hasSourceData = Boolean(
+    ipapi || stopForumSpam || ipwhois || proxycheck,
+  );
 
   if (!hasSourceData) {
     if (sources.errors?.length) {
@@ -154,6 +184,18 @@ function buildReputationSummary(data, flags) {
       reasons.push(`StopForumSpam (${confidence}% confiance)`);
     } else {
       reasons.push("Signalement StopForumSpam");
+    }
+  }
+  if (proxycheck?.proxy === "yes") {
+    reasons.push("ProxyCheck (proxy détecté)");
+  } else if (proxycheck?.type) {
+    const typeLabel = proxycheck.type.toLowerCase();
+    if (typeLabel.includes("vpn")) {
+      reasons.push("ProxyCheck (VPN)");
+    } else if (typeLabel.includes("tor")) {
+      reasons.push("ProxyCheck (Tor)");
+    } else if (/(datacenter|hosting)/.test(typeLabel)) {
+      reasons.push("ProxyCheck (hébergement)");
     }
   }
 
@@ -189,6 +231,25 @@ function buildReputationSummary(data, flags) {
     null;
   if (timezone) {
     details.push(`Fuseau horaire : ${timezone}`);
+  }
+  if (proxycheck?.type) {
+    details.push(`ProxyCheck : ${proxycheck.type}`);
+  }
+  if (proxycheck?.isp) {
+    details.push(`ProxyCheck ISP : ${proxycheck.isp}`);
+  }
+  if (proxycheck?.asn || proxycheck?.org) {
+    const parts = [proxycheck.asn, proxycheck.org].filter(Boolean);
+    if (parts.length) {
+      details.push(`ProxyCheck ASN : ${parts.join(" - ")}`);
+    }
+  }
+  if (Number.isFinite(proxycheck?.risk)) {
+    const riskScore = Math.max(
+      0,
+      Math.min(100, Math.round(proxycheck.risk)),
+    );
+    details.push(`ProxyCheck risque : ${riskScore}%`);
   }
 
   const asnNumber =
@@ -246,7 +307,7 @@ function scheduleIpReputationRefresh(ip, options = {}) {
 
   const refreshPromise = refreshIpReputation(normalized, options)
     .catch((err) => {
-      console.error("Unable to refresh IP reputation", err);
+      console.error("Impossible de rafraîchir la réputation de l'IP", err);
     })
     .finally(() => {
       pendingReputationRefreshes.delete(key);
@@ -350,16 +411,56 @@ async function queryIpWhois(ip) {
   };
 }
 
+async function queryProxyCheck(ip) {
+  const endpoint = `${PROXY_CHECK_ENDPOINT}/${encodeURIComponent(ip)}`;
+  const url = new URL(endpoint);
+  url.searchParams.set("vpn", "1");
+  url.searchParams.set("risk", "1");
+  url.searchParams.set("asn", "1");
+  url.searchParams.set("time", "1");
+  if (PROXY_CHECK_KEY) {
+    url.searchParams.set("key", PROXY_CHECK_KEY);
+  }
+  const json = await fetchJsonWithTimeout(url.toString(), {
+    headers: { "User-Agent": "simple-wiki-ip-check" },
+  });
+  if (!json || json.status !== "ok" || !json[ip]) {
+    throw new Error("Réponse ProxyCheck invalide");
+  }
+  const entry = json[ip];
+  return {
+    proxy: typeof entry.proxy === "string" ? entry.proxy : null,
+    type: typeof entry.type === "string" ? entry.type : null,
+    risk: toNumber(entry.risk),
+    asn: typeof entry.asn === "string" ? entry.asn : null,
+    isp: typeof entry.isp === "string" ? entry.isp : null,
+    org: typeof entry.org === "string" ? entry.org : null,
+    country: typeof entry.country === "string" ? entry.country : null,
+    raw: entry,
+  };
+}
+
 async function queryIpReputation(ip) {
-  const [ipapiResult, stopForumSpamResult, ipwhoisResult] =
-    await Promise.allSettled([
-      queryIpapi(ip),
-      queryStopForumSpam(ip),
-      queryIpWhois(ip),
-    ]);
+  const [
+    ipapiResult,
+    stopForumSpamResult,
+    ipwhoisResult,
+    proxyCheckResult,
+  ] = await Promise.allSettled([
+    queryIpapi(ip),
+    queryStopForumSpam(ip),
+    queryIpWhois(ip),
+    queryProxyCheck(ip),
+  ]);
 
   const errors = [];
-  const result = { ipapi: null, stopForumSpam: null, ipwhois: null, errors };
+  const result = {
+    ipapi: null,
+    stopForumSpam: null,
+    ipwhois: null,
+    proxycheck: null,
+    errors,
+  };
 
   if (ipapiResult.status === "fulfilled") {
     result.ipapi = ipapiResult.value;
@@ -382,6 +483,16 @@ async function queryIpReputation(ip) {
   } else {
     errors.push(
       `ipwho.is: ${ipwhoisResult.reason?.message || ipwhoisResult.reason}`,
+    );
+  }
+
+  if (proxyCheckResult.status === "fulfilled") {
+    result.proxycheck = proxyCheckResult.value;
+  } else {
+    errors.push(
+      `ProxyCheck: ${
+        proxyCheckResult.reason?.message || proxyCheckResult.reason
+      }`,
     );
   }
 
@@ -543,7 +654,7 @@ export async function refreshIpReputation(ip, { force = false } = {}) {
   try {
     data = await queryIpReputation(normalized);
   } catch (err) {
-    console.error(`Unable to fetch IP reputation for ${normalized}`, err);
+    console.error(`Impossible de récupérer la réputation IP pour ${normalized}`, err);
     const message = `Échec de la vérification automatique (${err?.message || err}).`;
     await run(
       `UPDATE ip_profiles
@@ -565,7 +676,7 @@ export async function refreshIpReputation(ip, { force = false } = {}) {
   const flags = computeReputationFlags(data);
   const sources = normalizeReputationSources(data);
   const hasSourceData = Boolean(
-    sources.ipapi || sources.stopForumSpam || sources.ipwhois,
+    sources.ipapi || sources.stopForumSpam || sources.ipwhois || sources.proxycheck,
   );
   let autoStatus = computeAutoStatus(flags);
   if (!hasSourceData) {

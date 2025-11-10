@@ -1691,6 +1691,12 @@ r.get(
   const refreshIntervalHours =
     Math.round((IP_REPUTATION_REFRESH_INTERVAL_MS / (60 * 60 * 1000)) * 10) /
     10;
+  const providerLinks = [
+    { name: "ipapi.is", url: "https://ipapi.is" },
+    { name: "StopForumSpam", url: "https://www.stopforumspam.com" },
+    { name: "ipwho.is", url: "https://ipwho.is" },
+    { name: "ProxyCheck", url: "https://proxycheck.io" },
+  ];
   res.render("admin/ip_reputation", {
     suspicious,
     cleared,
@@ -1699,7 +1705,8 @@ r.get(
     clearedPagination,
     historyPagination,
     refreshIntervalHours,
-    providerName: "ipapi.is",
+    providerLinks,
+    providerName: providerLinks.map((provider) => provider.name).join(" · "),
   });
   },
 );

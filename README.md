@@ -9,6 +9,7 @@ SimpleWiki is a self-hosted wiki and knowledge base built with Node.js, Express,
 - **Community features** – Nested comment threads with preview and validation, reactions, and rate limiting. A captcha mathématique dynamique protège les formulaires de commentaire et d'inscription. 【F:routes/pages.js†L1-L120】【F:routes/pages.js†L136-L204】
 - **Account & role management** – Session-backed authentication, configurable role flags, IP profile claims, and granular admin permissions configurable through default roles. Session secrets can be sourced from environment variables or a watched file. 【F:utils/config.js†L1-L45】【F:utils/sessionSecrets.js†L1-L83】【F:routes/pages.js†L17-L68】
 - **Operational visibility** – Live visitor tracking with WebSocket updates, bot detection hooks, cookie consent middleware, and integration points for Discord/webhook notifications. 【F:utils/liveStats.js†L1-L83】【F:utils/liveStatsWebsocket.js†L1-L119】【F:app.js†L38-L88】
+- **Surveillance IP renforcée** – Les adresses IP sont automatiquement examinées via ipapi.is, StopForumSpam, ipwho.is et ProxyCheck pour classifier VPN, proxys, nœuds Tor et hébergements abusifs, avec un tableau de bord qui permet de relancer les analyses, valider ou bannir chaque profil. 【F:utils/ipProfiles.js†L19-L240】【F:routes/admin.js†L1694-L1860】
 
 ## Tech Stack
 
@@ -76,6 +77,8 @@ Environment variables customize behavior. Only `SESSION_SECRET` is strongly reco
 | `DEFAULT_LANG` | Default language for new visitors: `fr` (default) or `en`. |
 | `BOT_DETECTION_ENDPOINT`, `BOT_DETECTION_TIMEOUT_MS` | External bot detection service and timeout used when tracking visitors. |
 | `IP_REPUTATION_*` | Configure IP reputation API endpoints and timeouts for ban and profile workflows. |
+| `PROXY_CHECK_ENDPOINT` | Override the ProxyCheck service endpoint (defaults to `https://proxycheck.io/v2`). |
+| `PROXY_CHECK_KEY` | Optional API key for ProxyCheck; the default `free` value targets the free tier and omitting the key parameter is allowed by setting this to an empty string. |
 | `IP_PROFILE_SALT` | Secret salt for hashing IP profile identifiers. |
 
 Refer to [`utils/config.js`](./utils/config.js), [`utils/sessionSecrets.js`](./utils/sessionSecrets.js), and [`utils/ipProfiles.js`](./utils/ipProfiles.js) for full details. 【F:utils/config.js†L1-L45】【F:utils/sessionSecrets.js†L1-L120】【F:utils/ipProfiles.js†L1-L37】
