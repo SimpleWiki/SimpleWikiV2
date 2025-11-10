@@ -5,10 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "node --watch app.js",
-    "db:init": "node scripts/db-init.js",
-    "views:aggregate": "node scripts/aggregateViews.js",
-    "test": "node --test"
+    "init": "node scripts/db-init.js",
   },
   "dependencies": {
     "@simplewebauthn/server": "^13.2.2",
