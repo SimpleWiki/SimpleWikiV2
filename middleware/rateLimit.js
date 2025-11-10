@@ -1,10 +1,10 @@
 import { getClientIp } from "../utils/ip.js";
 
-const SAFE_HEADERS = {
+const DEFAULT_SAFE_HEADERS = {
   "Cache-Control": "private, max-age=0, must-revalidate",
 };
 
-function resolveClientKey(req, keyGenerator) {
+function resolveClientKey(req, keyGenerator, onKeyFailure) {
   try {
     if (typeof keyGenerator === "function") {
       const key = keyGenerator(req);
@@ -13,26 +13,59 @@ function resolveClientKey(req, keyGenerator) {
       }
     }
   } catch (err) {
-    // Ignore custom key errors and fallback to IP based detection.
+    if (typeof onKeyFailure === "function") {
+      onKeyFailure(err, req);
+    }
   }
   const ip = getClientIp(req) || req.ip;
   return ip ? String(ip) : "global";
 }
 
-function sendRateLimitResponse(req, res, message, statusCode) {
+function defaultResponseFormatter({ message, metadata }) {
+  const text = message || "Too many requests";
+  return {
+    text,
+    json: {
+      ok: false,
+      message: text,
+      ...metadata,
+    },
+  };
+}
+
+function sendRateLimitResponse(
+  req,
+  res,
+  message,
+  statusCode,
+  headers,
+  responseFormatter,
+  metadata
+) {
   const body = message || "Too many requests";
   if (res.headersSent) {
     return;
   }
-  Object.entries(SAFE_HEADERS).forEach(([header, value]) => {
-    if (!res.get(header)) {
-      res.set(header, value);
+  Object.entries({ ...DEFAULT_SAFE_HEADERS, ...headers }).forEach(
+    ([header, value]) => {
+      if (!res.get(header)) {
+        res.set(header, value);
+      }
     }
-  });
+  );
+  const formatter =
+    typeof responseFormatter === "function"
+      ? responseFormatter
+      : defaultResponseFormatter;
+  const formatted = formatter({ req, message: body, metadata }) || {};
+  const textPayload = formatted.text ?? body;
   if (req?.accepts?.("json") && !req.accepts("html")) {
-    res.status(statusCode).json({ ok: false, message: body });
+    const jsonPayload =
+      formatted.json ??
+      defaultResponseFormatter({ req, message: body, metadata }).json;
+    res.status(statusCode).json(jsonPayload);
   } else {
-    res.status(statusCode).send(body);
+    res.status(statusCode).send(textPayload);
   }
 }
 
@@ -42,6 +75,11 @@ export function createRateLimiter({
   message = "Trop de requêtes. Merci de réessayer plus tard.",
   statusCode = 429,
   keyGenerator,
+  headers = DEFAULT_SAFE_HEADERS,
+  skip,
+  onKeyFailure,
+  responseFormatter = defaultResponseFormatter,
+  onLimitReached,
 } = {}) {
   if (typeof windowMs !== "number" || windowMs <= 0) {
     throw new Error("windowMs must be a positive number");
@@ -101,8 +139,11 @@ export function createRateLimiter({
   }
 
   function rateLimiter(req, res, next) {
+    if (typeof skip === "function" && skip(req, res)) {
+      return next();
+    }
     const now = Date.now();
-    const key = resolveClientKey(req, keyGenerator);
+    const key = resolveClientKey(req, keyGenerator, onKeyFailure);
     const entry = registerHit(key, now, windowMs);
     entry.count += 1;
 
@@ -113,7 +154,28 @@ export function createRateLimiter({
       }
       const bodyMessage =
         typeof message === "function" ? message(req) : message;
-      return sendRateLimitResponse(req, res, bodyMessage, statusCode);
+      const retryAfterSeconds =
+        retryAfterMs > 0 ? Math.ceil(retryAfterMs / 1000) : undefined;
+      const metadata = {
+        limit,
+        windowMs,
+        retryAfter: retryAfterSeconds,
+        count: entry.count,
+        remaining: Math.max(limit - entry.count, 0),
+        resetAt: entry.expiresAt,
+      };
+      if (typeof onLimitReached === "function") {
+        onLimitReached({ req, res, key, entry, metadata });
+      }
+      return sendRateLimitResponse(
+        req,
+        res,
+        bodyMessage,
+        statusCode,
+        headers,
+        responseFormatter,
+        metadata
+      );
     }
 
     next();
