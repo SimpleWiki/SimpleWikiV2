@@ -44,35 +44,6 @@ export default {
       actions: { save: "Save" },
     },
     stats: {
-      storage: {
-        title: "Storage statistics",
-        description: "Analysis of space used in the SQLite database and breakdown of heavy contents.",
-        metrics: {
-          fileSize: "File size",
-          fileSizeHelp: "Size on disk",
-          usedPages: "Used pages",
-          usedHelp: "Space actually used",
-          freeSpace: "Free space",
-          freeHelp: "Available pages",
-          tracked: "Tracked storage",
-          trackedHelp: "Sum of detailed items",
-        },
-        breakdown: {
-          title: "Breakdown by content",
-          entries: "{n} entries",
-          entriesUnknown: "Exact count unavailable",
-          estimateTitle: "Estimated value based on content",
-          otherTitle: "Difference between used space and tracked items",
-          percentageNote: "Percentage calculated over <strong>{base}</strong> of used database space.",
-        },
-        noData: "No storage data is currently available.",
-        tableError: "Unable to fetch table details:",
-        tables: {
-          title: "Largest tables",
-          headers: { table: "Table", total: "Total size", payload: "Payload", free: "Free", pages: "Pages", rowsEst: "Rows (est.)" },
-          note: "Showing top 12 tables. Sizes include associated indexes.",
-        },
-      },
       title: "Statistics",
       hero: {
         title: "Statistics dashboard",
@@ -314,35 +285,6 @@ export default {
       anonymous: "Anonymous",
     },
     stats: {
-      storage: {
-        title: "Storage statistics",
-        description: "Analysis of space used in the SQLite database and breakdown of heavy contents.",
-        metrics: {
-          fileSize: "File size",
-          fileSizeHelp: "Size on disk",
-          usedPages: "Used pages",
-          usedHelp: "Space actually used",
-          freeSpace: "Free space",
-          freeHelp: "Available pages",
-          tracked: "Tracked storage",
-          trackedHelp: "Sum of detailed items",
-        },
-        breakdown: {
-          title: "Breakdown by content",
-          entries: "{n} entries",
-          entriesUnknown: "Exact count unavailable",
-          estimateTitle: "Estimated value based on content",
-          otherTitle: "Difference between used space and tracked items",
-          percentageNote: "Percentage calculated over <strong>{base}</strong> of used database space.",
-        },
-        noData: "No storage data is currently available.",
-        tableError: "Unable to fetch table details:",
-        tables: {
-          title: "Largest tables",
-          headers: { table: "Table", total: "Total size", payload: "Payload", free: "Free", pages: "Pages", rowsEst: "Rows (est.)" },
-          note: "Showing top 12 tables. Sizes include associated indexes.",
-        },
-      },
       title: "Statistics",
       hero: {
         title: "Statistics dashboard",

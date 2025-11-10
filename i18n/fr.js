@@ -20,35 +20,6 @@ export default {
       heading: "Erreur 500",
     },
     stats: {
-      storage: {
-        title: "Statistiques de stockage",
-        description: "Analyse de l'espace utilisé dans la base de données SQLite et répartition des contenus lourds.",
-        metrics: {
-          fileSize: "Taille du fichier",
-          fileSizeHelp: "Taille sur disque",
-          usedPages: "Pages utilisées",
-          usedHelp: "Espace réellement occupé",
-          freeSpace: "Espace libre",
-          freeHelp: "Pages disponibles",
-          tracked: "Stockage suivi",
-          trackedHelp: "Somme des postes détaillés",
-        },
-        breakdown: {
-          title: "Répartition par contenu",
-          entries: "{n} entrées",
-          entriesUnknown: "Nombre exact indisponible",
-          estimateTitle: "Valeur estimée d'après le contenu",
-          otherTitle: "Différence entre l'espace utilisé et les postes suivis",
-          percentageNote: "Pourcentage calculé sur <strong>{base}</strong> d'espace utilisé dans la base.",
-        },
-        noData: "Aucune donnée de stockage n'est disponible pour le moment.",
-        tableError: "Impossible de récupérer le détail des tables :",
-        tables: {
-          title: "Tables les plus volumineuses",
-          headers: { table: "Table", total: "Taille totale", payload: "Payload", free: "Libre", pages: "Pages", rowsEst: "Lignes (estim.)" },
-          note: "Affichage limité aux 12 tables principales. Les tailles incluent les index associés.",
-        },
-      },
       title: "Statistiques",
       hero: {
         title: "Tableau de bord des statistiques",
@@ -314,35 +285,6 @@ export default {
       anonymous: "Anonyme",
     },
     stats: {
-      storage: {
-        title: "Statistiques de stockage",
-        description: "Analyse de l'espace utilisé dans la base de données SQLite et répartition des contenus lourds.",
-        metrics: {
-          fileSize: "Taille du fichier",
-          fileSizeHelp: "Taille sur disque",
-          usedPages: "Pages utilisées",
-          usedHelp: "Espace réellement occupé",
-          freeSpace: "Espace libre",
-          freeHelp: "Pages disponibles",
-          tracked: "Stockage suivi",
-          trackedHelp: "Somme des postes détaillés",
-        },
-        breakdown: {
-          title: "Répartition par contenu",
-          entries: "{n} entrées",
-          entriesUnknown: "Nombre exact indisponible",
-          estimateTitle: "Valeur estimée d'après le contenu",
-          otherTitle: "Différence entre l'espace utilisé et les postes suivis",
-          percentageNote: "Pourcentage calculé sur <strong>{base}</strong> d'espace utilisé dans la base.",
-        },
-        noData: "Aucune donnée de stockage n'est disponible pour le moment.",
-        tableError: "Impossible de récupérer le détail des tables :",
-        tables: {
-          title: "Tables les plus volumineuses",
-          headers: { table: "Table", total: "Taille totale", payload: "Payload", free: "Libre", pages: "Pages", rowsEst: "Lignes (estim.)" },
-          note: "Affichage limité aux 12 tables principales. Les tailles incluent les index associés.",
-        },
-      },
       title: "Statistiques",
       hero: {
         title: "Tableau de bord des statistiques",

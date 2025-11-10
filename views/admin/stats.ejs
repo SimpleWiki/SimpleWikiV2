@@ -13,42 +13,6 @@
     }
     return numberFormatter.format(Math.round(numeric));
   };
-  const formatBytes = (value) => {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric) || numeric <= 0) {
-      return lang === 'en' ? '0 B' : '0 o';
-    }
-    const units = lang === 'en' ? ['B','KB','MB','GB','TB','PB'] : ['o','Ko','Mo','Go','To','Po'];
-    let unitIndex = 0;
-    let size = numeric;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex += 1;
-    }
-    const formatted =
-      size >= 10
-        ? numberFormatter.format(Math.round(size))
-        : decimalFormatter.format(size);
-    return `${formatted} ${units[unitIndex]}`;
-  };
-  const formatPercentage = (value) => {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric) || numeric <= 0) {
-      return '0';
-    }
-    return decimalFormatter.format(numeric);
-  };
-  const storage = storageStats || {
-    databaseFileSize: 0,
-    databaseAllocatedBytes: 0,
-    databaseUsedBytes: 0,
-    databaseFreeBytes: 0,
-    breakdown: [],
-    totalTrackedBytes: 0,
-    percentageBaseBytes: 0,
-    tableDetails: [],
-    tableDetailsError: null,
-  };
 %>
 <section class="card stats-hero">
   <div>
@@ -146,105 +110,7 @@
   </div>
 </section>
 
-<section class="card stats-storage-card">
-  <div class="stats-storage-header">
-    <div>
-      <h2 class="mt-0"><%= t('admin.stats.storage.title') %></h2>
-      <p class="text-muted text-sm"><%= t('admin.stats.storage.description') %></p>
-    </div>
-  </div>
-  <div class="stats-storage-metrics">
-    <div class="storage-metric">
-      <span class="label"><%= t('admin.stats.storage.metrics.fileSize') %></span>
-      <strong><%= formatBytes(storage.databaseFileSize) %></strong>
-      <small><%= t('admin.stats.storage.metrics.fileSizeHelp') %></small>
-    </div>
-    <div class="storage-metric">
-      <span class="label"><%= t('admin.stats.storage.metrics.usedPages') %></span>
-      <strong><%= formatBytes(storage.databaseUsedBytes) %></strong>
-      <small><%= t('admin.stats.storage.metrics.usedHelp') %></small>
-    </div>
-    <div class="storage-metric">
-      <span class="label"><%= t('admin.stats.storage.metrics.freeSpace') %></span>
-      <strong><%= formatBytes(storage.databaseFreeBytes) %></strong>
-      <small><%= t('admin.stats.storage.metrics.freeHelp') %></small>
-    </div>
-    <div class="storage-metric">
-      <span class="label"><%= t('admin.stats.storage.metrics.tracked') %></span>
-      <strong><%= formatBytes(storage.totalTrackedBytes) %></strong>
-      <small><%= t('admin.stats.storage.metrics.trackedHelp') %></small>
-    </div>
-  </div>
-  <% if (storage.breakdown && storage.breakdown.length) { %>
-    <h3><%= t('admin.stats.storage.breakdown.title') %></h3>
-    <ul class="storage-breakdown-list">
-      <% storage.breakdown.forEach((entry) => { %>
-        <li>
-          <div>
-            <span class="label"><%= entry.label %></span>
-            <% if (Number.isFinite(entry.rows)) { %>
-              <span class="sub"><%= t('admin.stats.storage.breakdown.entries', { n: formatNumber(entry.rows) }) %></span>
-            <% } else { %>
-              <span class="sub text-muted"><%= t('admin.stats.storage.breakdown.entriesUnknown') %></span>
-            <% } %>
-          </div>
-          <div class="storage-breakdown-size">
-            <strong><%= formatBytes(entry.bytes) %></strong>
-            <% if (entry.bytesSource === 'estimate') { %>
-              <span class="storage-chip" title="<%= t('admin.stats.storage.breakdown.estimateTitle') %>">est.</span>
-            <% } else if (entry.bytesSource === 'derived') { %>
-              <span class="storage-chip" title="<%= t('admin.stats.storage.breakdown.otherTitle') %>">reste</span>
-            <% } %>
-            <% if (entry.percentage > 0) { %>
-              <span class="text-muted storage-percentage"><%= formatPercentage(entry.percentage) %>%</span>
-            <% } %>
-          </div>
-        </li>
-      <% }) %>
-    </ul>
-    <p class="note-text">
-      <%- t('admin.stats.storage.breakdown.percentageNote', { base: formatBytes(storage.percentageBaseBytes || storage.totalTrackedBytes) }) %>
-    </p>
-  <% } else { %>
-    <p class="text-muted"><%= t('admin.stats.storage.noData') %></p>
-  <% } %>
-  <% if (storage.tableDetailsError) { %>
-    <p class="note-text text-danger"><%= t('admin.stats.storage.tableError') %> <%= storage.tableDetailsError %></p>
-  <% } %>
-  <% const storageTables = Array.isArray(storage.tableDetails) ? storage.tableDetails.slice(0, 12) : []; %>
-  <% if (storageTables.length) { %>
-    <h3><%= t('admin.stats.storage.tables.title') %></h3>
-    <div class="table-wrap">
-      <table class="data-table compact">
-        <thead>
-          <tr>
-            <th><%= t('admin.stats.storage.tables.headers.table') %></th>
-            <th><%= t('admin.stats.storage.tables.headers.total') %></th>
-            <th><%= t('admin.stats.storage.tables.headers.payload') %></th>
-            <th><%= t('admin.stats.storage.tables.headers.free') %></th>
-            <th><%= t('admin.stats.storage.tables.headers.pages') %></th>
-            <th><%= t('admin.stats.storage.tables.headers.rowsEst') %></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% storageTables.forEach((row) => { %>
-            <tr>
-              <td><code><%= row.name %></code></td>
-              <td><%= formatBytes(row.sizeBytes) %></td>
-              <td><%= formatBytes(row.payloadBytes) %></td>
-              <td><%= formatBytes(row.unusedBytes) %></td>
-              <td><%= formatNumber(row.pageCount) %></td>
-              <td><%= row.rowEstimate ? formatNumber(row.rowEstimate) : '—' %></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-    <p class="text-muted text-sm"><%= t('admin.stats.storage.tables.note') %></p>
-  <% } %>
-</section>
-
-<%
+<% 
   const liveWindowMinutes = Math.max(
     1,
     Math.round((liveVisitorsWindowSeconds || 0) / 60),
