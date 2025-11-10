@@ -1,0 +1,382 @@
+<% title = t('admin.ipBans.title'); %>
+<h1><%= t('admin.ipBans.heading') %></h1>
+<% const permissionFlags =
+  typeof permissions !== 'undefined' && permissions && typeof permissions === 'object'
+    ? permissions
+    : {}; %>
+<% const canManageUserBansLocal = typeof canManageUserBans === 'boolean'
+  ? canManageUserBans
+  : Boolean(permissionFlags.can_manage_users && permissionFlags.can_suspend_users);
+%>
+
+<form method="get" class="card mb-md">
+  <div class="flex flex-wrap gap-sm items-end">
+    <label class="stack-form">
+      <span class="text-sm text-muted"><%= t('admin.ipBans.search.label') %></span>
+      <input
+        type="text"
+        name="search"
+        value="<%= typeof searchTerm === 'string' ? searchTerm : '' %>"
+        placeholder="<%= t('admin.ipBans.search.placeholder') %>"
+        class="flex-basis-260"
+      />
+    </label>
+    <input type="hidden" name="activePage" value="1" />
+    <input type="hidden" name="liftedPage" value="1" />
+    <input type="hidden" name="activePerPage" value="<%= activePagination.perPage %>" />
+    <input type="hidden" name="liftedPerPage" value="<%= liftedPagination.perPage %>" />
+    <input type="hidden" name="userPage" value="1" />
+    <input type="hidden" name="userPerPage" value="<%= bannedUsersPagination.perPage %>" />
+    <input type="hidden" name="userActionPage" value="1" />
+    <input type="hidden" name="userActionPerPage" value="<%= userActionPagination.perPage %>" />
+    <button class="btn" type="submit"><%= t('admin.ipBans.search.button') %></button>
+    <% if (searchTerm) { %>
+      <a class="btn secondary" href="/admin/ip-bans"><%= t('admin.ipBans.search.reset') %></a>
+    <% } %>
+  </div>
+</form>
+
+<section class="card mb-xl">
+  <h2><%= t('admin.ipBans.userActions.title') %></h2>
+  <% if (canManageUserBansLocal) { %>
+    <form method="post" action="/admin/ip-bans/users/actions" class="grid grid-auto">
+      <%- include('../partials/csrf_field') %>
+      <div>
+        <label for="user-action-target"><%= t('admin.ipBans.userActions.user') %></label>
+        <input
+          id="user-action-target"
+          type="text"
+          name="user"
+          placeholder="<%= t('admin.ipBans.userActions.userPlaceholder') %>"
+          required
+        >
+      </div>
+      <fieldset class="grid-span-full stack-form">
+        <legend><%= t('admin.ipBans.userActions.legend') %></legend>
+        <div class="flex flex-wrap gap-sm">
+          <% const actionLabels = {
+            global: t('admin.ipBans.actions.global'),
+            view: t('admin.ipBans.actions.view'),
+            comment: t('admin.ipBans.actions.comment'),
+            like: t('admin.ipBans.actions.like'),
+            react: t('admin.ipBans.actions.react'),
+            contribute: t('admin.ipBans.actions.contribute'),
+            tag: t('admin.ipBans.actions.tag'),
+            edit: t('admin.ipBans.actions.edit'),
+            delete: t('admin.ipBans.actions.delete'),
+            manual_publish: t('admin.ipBans.actions.manual_publish'),
+            cancel_schedule: t('admin.ipBans.actions.cancel_schedule'),
+            revert_revision: t('admin.ipBans.actions.revert_revision'),
+            permanent_delete: t('admin.ipBans.actions.permanent_delete'),
+          }; %>
+          <% Object.keys(actionLabels).forEach(key => { %>
+            <label class="checkbox">
+              <input type="checkbox" name="actions" value="<%= key %>">
+              <span><%= actionLabels[key] %></span>
+            </label>
+          <% }) %>
+        </div>
+      </fieldset>
+      <div>
+        <label for="user-action-tag"><%= t('admin.ipBans.userActions.tagLabel') %></label>
+        <input
+          id="user-action-tag"
+          type="text"
+          name="tag"
+          placeholder="<%= t('admin.ipBans.userActions.tagPlaceholder') %>"
+        >
+        <p class="help-text"><%= t('admin.ipBans.userActions.tagHelp') %></p>
+      </div>
+      <div class="grid-span-full">
+        <label for="user-action-reason"><%= t('admin.ipBans.userActions.reason') %></label>
+        <input
+          id="user-action-reason"
+          type="text"
+          name="reason"
+          placeholder="<%= t('admin.ipBans.userActions.reasonPlaceholder') %>"
+        >
+      </div>
+      <div class="grid-span-full">
+        <button class="btn warning" type="submit"><%= t('admin.ipBans.userActions.apply') %></button>
+      </div>
+    </form>
+    <p class="help-text"><%= t('admin.ipBans.userActions.help') %></p>
+  <% } else { %>
+    <p><%= t('admin.ipBans.userActions.noPermission') %></p>
+  <% } %>
+</section>
+
+<section class="card mb-xl">
+  <h2><%= t('admin.ipBans.add.title') %></h2>
+  <form method="post" action="/admin/ip-bans" class="grid grid-auto">
+    <%- include('../partials/csrf_field') %>
+    <div>
+      <label for="ip"><%= t('admin.ipBans.add.ip') %></label>
+      <input id="ip" type="text" name="ip" required>
+    </div>
+    <div>
+      <label for="scope"><%= t('admin.ipBans.add.scope') %></label>
+      <select id="scope" name="scope" required>
+        <option value="global"><%= t('admin.ipBans.actions.global') %></option>
+        <option value="view"><%= t('admin.ipBans.add.scopeView') %></option>
+        <option value="comment"><%= t('admin.ipBans.actions.comment') %></option>
+        <option value="like"><%= t('admin.ipBans.actions.like') %></option>
+        <option value="react"><%= t('admin.ipBans.actions.react') %></option>
+        <option value="contribute"><%= t('admin.ipBans.actions.contribute') %></option>
+        <option value="tag"><%= t('admin.ipBans.add.scopeTagSpecific') %></option>
+        <option value="edit"><%= t('admin.ipBans.actions.edit') %></option>
+        <option value="delete"><%= t('admin.ipBans.actions.delete') %></option>
+        <option value="manual_publish"><%= t('admin.ipBans.actions.manual_publish') %></option>
+        <option value="cancel_schedule"><%= t('admin.ipBans.actions.cancel_schedule') %></option>
+        <option value="revert_revision"><%= t('admin.ipBans.actions.revert_revision') %></option>
+        <option value="permanent_delete"><%= t('admin.ipBans.actions.permanent_delete') %></option>
+      </select>
+    </div>
+    <div>
+      <label for="tag"><%= t('admin.ipBans.add.tagLabel') %></label>
+      <input id="tag" type="text" name="tag" placeholder="<%= t('admin.ipBans.add.tagPlaceholder') %>">
+    </div>
+    <div class="grid-span-full">
+      <label for="reason"><%= t('admin.ipBans.add.reason') %></label>
+      <input id="reason" type="text" name="reason" placeholder="<%= t('admin.ipBans.add.reasonPlaceholder') %>">
+    </div>
+    <div class="grid-span-full">
+      <button class="btn success" type="submit"><%= t('admin.ipBans.add.save') %></button>
+    </div>
+  </form>
+  <p class="help-text"><%= t('admin.ipBans.add.help') %></p>
+</section>
+
+<section class="card mb-xl">
+  <h2><%- t('admin.ipBans.bannedUsers.title', { count: fmt.number(bannedUsersPagination.totalItems) }) %></h2>
+  <% if (!canManageUserBansLocal) { %>
+    <p><%= t('admin.ipBans.bannedUsers.noPermission') %></p>
+  <% } else if (!bannedUsers.length) { %>
+    <p><%= t('admin.ipBans.bannedUsers.empty') %></p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th><%= t('admin.ipBans.bannedUsers.table.name') %></th>
+            <th><%= t('admin.ipBans.bannedUsers.table.display') %></th>
+            <th><%= t('admin.ipBans.bannedUsers.table.reason') %></th>
+            <th><%= t('admin.ipBans.bannedUsers.table.bannedAt') %></th>
+            <th><%= t('admin.ipBans.bannedUsers.table.by') %></th>
+            <th><%= t('admin.ipBans.bannedUsers.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% bannedUsers.forEach(user => { %>
+            <% const bannedUserRole = user.userRole || null; %>
+            <% const bannedUserColor = bannedUserRole && bannedUserRole.color ? bannedUserRole.color : null; %>
+            <% const bannedUserClasses = ['user-handle']; %>
+            <% const bannedUserStyle = bannedUserColor && bannedUserColor.hasColor ? bannedUserColor.style : ''; %>
+            <% if (bannedUserColor && bannedUserColor.hasColor) { bannedUserClasses.push('role-colored-text'); bannedUserClasses.push(bannedUserColor.className); } %>
+            <% const bannedUserBadges = Array.isArray(bannedUserRole?.badges) ? bannedUserRole.badges : []; %>
+            <tr>
+              <td><%= user.id %></td>
+              <td>
+                <span class="user-handle-decorated">
+                  <strong class="<%= bannedUserClasses.join(' ') %>" style="<%= bannedUserStyle %>"><%= user.username %></strong>
+                  <%- include('../partials/userBadges', {
+                    badges: bannedUserBadges,
+                    listClass: ['user-handle-badges', 'user-handle-badges--inline'],
+                    itemClass: 'user-handle-badge-item',
+                    iconClass: 'user-handle-badge-icon',
+                    srOnlyClass: 'sr-only',
+                    ariaLabel: t('common.authorBadgesAria'),
+                  }) %>
+                </span>
+              </td>
+              <td><%= user.display_name || '-' %></td>
+              <td><%= user.ban_reason || '-' %></td>
+              <td><%= user.banned_at ? fmt.dateTime(user.banned_at) : '-' %></td>
+              <td><%= user.banned_by || '-' %></td>
+              <td>
+                <form
+                  method="post"
+                  action="/admin/users/<%= user.id %>/unban"
+                  onsubmit="return confirm(t('admin.ipBans.bannedUsers.unbanConfirm', { user: user.username }))"
+                >
+                  <%- include('../partials/csrf_field') %>
+                  <button class="btn success" type="submit"><%= t('admin.ipBans.bannedUsers.unban') %></button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination: bannedUsersPagination }) %>
+  <% } %>
+</section>
+
+<section class="card mb-xl">
+  <h2><%- t('admin.ipBans.userRestrictions.title', { count: fmt.number(userActionPagination.totalItems) }) %></h2>
+  <% if (!canManageUserBansLocal) { %>
+    <p><%= t('admin.ipBans.userRestrictions.noPermission') %></p>
+  <% } else if (!userActionBans.length) { %>
+    <p><%= t('admin.ipBans.userRestrictions.empty') %></p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th><%= t('admin.ipBans.userRestrictions.table.user') %></th>
+            <th><%= t('admin.ipBans.userRestrictions.table.type') %></th>
+            <th><%= t('admin.ipBans.userRestrictions.table.value') %></th>
+            <th><%= t('admin.ipBans.userRestrictions.table.reason') %></th>
+            <th><%= t('admin.ipBans.userRestrictions.table.created') %></th>
+            <th><%= t('admin.ipBans.userRestrictions.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% userActionBans.forEach(ban => { %>
+            <% const userLabel = ban.username ? ban.username : (ban.user_id ? t('admin.ipBans.userRestrictions.userN', { n: ban.user_id }) : t('admin.ipBans.userRestrictions.deletedAccount')); %>
+            <% const typeLabel = ban.scope === 'global' ? t('admin.ipBans.actions.global') : (ban.scope === 'tag' ? t('admin.ipBans.actions.tag') : t('admin.ipBans.userRestrictions.action')); %>
+            <% const valueLabel = ban.scope === 'global' ? '—' : (ban.value || (ban.scope === 'tag' ? '-' : '—')); %>
+            <tr>
+              <td><%= ban.snowflake_id %></td>
+              <td><%= userLabel %></td>
+              <td><%= typeLabel %></td>
+              <td><%= valueLabel %></td>
+              <td><%= ban.reason || '-' %></td>
+              <td><%= fmt.dateTime(ban.created_at) %></td>
+              <td>
+                <div class="flex flex-col gap-xs">
+                  <% if (!ban.lifted_at) { %>
+                    <form
+                      method="post"
+                      action="/admin/ip-bans/users/actions/<%= ban.snowflake_id %>/lift"
+                      onsubmit="return confirm(t('admin.ipBans.userRestrictions.liftConfirm'))"
+                    >
+                      <%- include('../partials/csrf_field') %>
+                      <button class="btn secondary" type="submit"><%= t('admin.ipBans.userRestrictions.lift') %></button>
+                    </form>
+                  <% } %>
+                  <form
+                    method="post"
+                    action="/admin/ip-bans/users/actions/<%= ban.snowflake_id %>/delete"
+                    onsubmit="return confirm(t('admin.ipBans.userRestrictions.deleteConfirm'))"
+                  >
+                    <%- include('../partials/csrf_field') %>
+                    <button class="btn danger" type="submit"><%= t('admin.ipBans.userRestrictions.delete') %></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination: userActionPagination }) %>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2><%- t('admin.ipBans.active.title', { count: fmt.number(activePagination.totalItems) }) %></h2>
+  <% if (!activeBans.length) { %>
+    <p><%= t('admin.ipBans.active.empty') %></p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>IP</th>
+            <th><%= t('admin.ipBans.active.table.type') %></th>
+            <th><%= t('admin.ipBans.active.table.value') %></th>
+            <th><%= t('admin.ipBans.active.table.reason') %></th>
+            <th><%= t('admin.ipBans.active.table.created') %></th>
+            <th><%= t('admin.ipBans.active.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% activeBans.forEach(ban => { %>
+            <tr>
+              <td><%= ban.snowflake_id %></td>
+              <td><code><%= ban.ip %></code></td>
+              <td><%= ban.scope %></td>
+              <td><%= ban.value || '-' %></td>
+              <td><%= ban.reason || '-' %></td>
+              <td><%= fmt.dateTime(ban.created_at) %></td>
+              <td>
+                <div class="flex flex-col gap-xs">
+                  <form
+                    method="post"
+                    action="/admin/ip-bans/<%= ban.snowflake_id %>/lift"
+                    onsubmit="return confirm(t('admin.ipBans.active.liftConfirm'))"
+                  >
+                    <%- include('../partials/csrf_field') %>
+                    <button class="btn secondary" type="submit"><%= t('admin.ipBans.active.lift') %></button>
+                  </form>
+                  <form
+                    method="post"
+                    action="/admin/ip-bans/<%= ban.snowflake_id %>/delete"
+                    onsubmit="return confirm(t('admin.ipBans.active.deleteConfirm'))"
+                  >
+                    <%- include('../partials/csrf_field') %>
+                    <button class="btn danger" type="submit"><%= t('admin.ipBans.active.delete') %></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination: activePagination }) %>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2><%- t('admin.ipBans.lifted.title', { count: fmt.number(liftedPagination.totalItems) }) %></h2>
+  <% if (!liftedBans.length) { %>
+    <p><%= t('admin.ipBans.lifted.empty') %></p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>IP</th>
+            <th><%= t('admin.ipBans.lifted.table.type') %></th>
+            <th><%= t('admin.ipBans.lifted.table.value') %></th>
+            <th><%= t('admin.ipBans.lifted.table.reason') %></th>
+            <th><%= t('admin.ipBans.lifted.table.created') %></th>
+            <th><%= t('admin.ipBans.lifted.table.lifted') %></th>
+            <th><%= t('admin.ipBans.lifted.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% liftedBans.forEach(ban => { %>
+            <tr>
+              <td><%= ban.snowflake_id %></td>
+              <td><code><%= ban.ip %></code></td>
+              <td><%= ban.scope %></td>
+              <td><%= ban.value || '-' %></td>
+              <td><%= ban.reason || '-' %></td>
+              <td><%= fmt.dateTime(ban.created_at) %></td>
+              <td><%= fmt.dateTime(ban.lifted_at) %></td>
+              <td>
+                <form
+                  method="post"
+                  action="/admin/ip-bans/<%= ban.snowflake_id %>/delete"
+                  onsubmit="return confirm(t('admin.ipBans.lifted.deleteConfirm'))"
+                >
+                  <%- include('../partials/csrf_field') %>
+                  <button class="btn danger" type="submit"><%= t('admin.ipBans.lifted.delete') %></button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination: liftedPagination }) %>
+  <% } %>
+</section>
+

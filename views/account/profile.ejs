@@ -1,0 +1,311 @@
+<% title = t('account.profile.title'); %>
+<%
+  const previewBannerStyle = profile.bannerUrl
+    ? `background-image: url('${encodeURI(profile.bannerUrl).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29')}')`
+    : '';
+  const previewInitialSource = (profile.displayName || profile.username || '?').trim();
+  const previewInitial = previewInitialSource
+    ? previewInitialSource.charAt(0).toUpperCase()
+    : '?';
+  const csrfQuerySuffix =
+    typeof csrfToken === 'string' && csrfToken.length
+      ? `?_csrf=${encodeURIComponent(csrfToken)}`
+      : '';
+  const publicProfileHref =
+    typeof profilePublicUrl === 'string' && profilePublicUrl.length
+      ? profilePublicUrl
+      : `/members/${encodeURIComponent(profile.username)}`;
+  const currentIpAbsoluteLink =
+    typeof currentIpLink === 'string' && currentIpLink.length
+      ? currentIpLink
+      : currentIpHash
+        ? `/profiles/ip/${encodeURIComponent(currentIpHash)}`
+        : '';
+%>
+<section class="card profile-settings">
+  <header class="profile-settings__header">
+    <div class="profile-preview">
+      <div
+        class="profile-preview__banner"
+        style="<%= previewBannerStyle %>"
+      ></div>
+      <div class="profile-preview__avatar-wrapper">
+        <div class="profile-preview__avatar">
+          <% if (profile.avatarUrl) { %>
+            <img src="<%= profile.avatarUrl %>" alt="<%= t('account.profile.avatarAlt') %>" loading="lazy" />
+          <% } else { %>
+            <span aria-hidden="true"><%= previewInitial %></span>
+          <% } %>
+          <span class="sr-only"><%= t('account.profile.avatarSr', { user: (profile.displayName || profile.username) }) %></span>
+        </div>
+      </div>
+    </div>
+    <div class="profile-settings__intro">
+      <h1 class="mt-0"><%= t('account.profile.heading') %></h1>
+      <p class="text-muted"><%= t('account.profile.intro') %></p>
+      <p>
+        <a class="btn secondary" href="<%= publicProfileHref %>"><%= t('account.profile.publicProfile') %></a>
+      </p>
+    </div>
+  </header>
+
+  <% if (errors && errors.length) { %>
+    <div class="alert error">
+      <ul>
+        <% errors.forEach(function (error) { %>
+          <li><%= error %></li>
+        <% }) %>
+      </ul>
+    </div>
+  <% } %>
+
+  <form
+    class="profile-form"
+    method="post"
+    action="/account/profile<%= csrfQuerySuffix %>"
+    enctype="multipart/form-data"
+  >
+    <%- include('../partials/csrf_field') %>
+    <div class="form-grid">
+      <div class="field">
+        <label for="profile-username"><%= t('account.profile.fields.username.label') %> <span class="text-required">*</span></label>
+        <input
+          id="profile-username"
+          type="text"
+          name="username"
+          value="<%= profile.username %>"
+          maxlength="32"
+          required
+        />
+        <p class="field-hint"><%= t('account.profile.fields.username.hint') %></p>
+      </div>
+
+      <div class="field">
+        <label for="profile-display-name"><%= t('account.profile.fields.displayName.label') %></label>
+        <input
+          id="profile-display-name"
+          type="text"
+          name="displayName"
+          value="<%= profile.displayName %>"
+          maxlength="80"
+          placeholder="<%= t('account.profile.fields.displayName.placeholder') %>"
+        />
+        <p class="field-hint"><%= t('account.profile.fields.displayName.hint') %></p>
+      </div>
+
+      <div class="field">
+        <label for="profile-avatar"><%= t('account.profile.fields.avatar.label') %></label>
+        <input
+          id="profile-avatar"
+          type="url"
+          name="avatarUrl"
+          value="<%= profile.avatarUrl %>"
+          placeholder="<%= t('account.profile.fields.avatar.urlPlaceholder') %>"
+        />
+        <p class="field-hint"><%= t('account.profile.fields.avatar.urlHint') %></p>
+        <label class="sr-only" for="profile-avatar-upload"><%= t('account.profile.fields.avatar.uploadSr') %></label>
+        <input
+          id="profile-avatar-upload"
+          type="file"
+          name="avatarFile"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+        />
+        <p class="field-hint"><%= t('account.profile.fields.avatar.fileHint') %></p>
+        <p class="field-hint">
+          <label>
+            <input type="checkbox" name="removeAvatar" value="1" />
+            <%= t('account.profile.fields.avatar.removeLabel') %>
+          </label>
+        </p>
+      </div>
+
+      <div class="field">
+        <label for="profile-banner"><%= t('account.profile.fields.banner.label') %></label>
+        <input
+          id="profile-banner"
+          type="url"
+          name="bannerUrl"
+          value="<%= profile.bannerUrl %>"
+          placeholder="<%= t('account.profile.fields.banner.urlPlaceholder') %>"
+        />
+        <p class="field-hint"><%= t('account.profile.fields.banner.urlHint') %></p>
+        <label class="sr-only" for="profile-banner-upload"><%= t('account.profile.fields.banner.uploadSr') %></label>
+        <input
+          id="profile-banner-upload"
+          type="file"
+          name="bannerFile"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+        />
+        <p class="field-hint"><%= t('account.profile.fields.banner.fileHint') %></p>
+        <p class="field-hint">
+          <label>
+            <input type="checkbox" name="removeBanner" value="1" />
+            <%= t('account.profile.fields.banner.removeLabel') %>
+          </label>
+        </p>
+      </div>
+    </div>
+
+    <fieldset class="profile-options">
+      <legend><%= t('account.profile.options.legend') %></legend>
+      <div class="field">
+        <label>
+          <input
+            type="checkbox"
+            name="showBio"
+            value="1"
+            <%= profile.showBio ? 'checked' : '' %>
+          />
+          <%= t('account.profile.options.bio.label') %>
+        </label>
+        <p class="field-hint"><%= t('account.profile.options.bio.hint') %></p>
+      </div>
+      <div class="field">
+        <label>
+          <input
+            type="checkbox"
+            name="showStats"
+            value="1"
+            <%= profile.showStats ? 'checked' : '' %>
+          />
+          <%= t('account.profile.options.stats.label') %>
+        </label>
+        <p class="field-hint"><%= t('account.profile.options.stats.hint') %></p>
+      </div>
+      <div class="field">
+        <label>
+          <input
+            type="checkbox"
+            name="showBadges"
+            value="1"
+            <%= profile.showBadges ? 'checked' : '' %>
+          />
+          <%= t('account.profile.options.badges.label') %>
+        </label>
+        <p class="field-hint"><%= t('account.profile.options.badges.hint') %></p>
+      </div>
+      <div class="field">
+        <label>
+          <input
+            type="checkbox"
+            name="showRecentPages"
+            value="1"
+            <%= profile.showRecentPages ? 'checked' : '' %>
+          />
+          <%= t('account.profile.options.recent.label') %>
+        </label>
+        <p class="field-hint"><%= t('account.profile.options.recent.hint') %></p>
+      </div>
+      <div class="field">
+        <label>
+          <input
+            type="checkbox"
+            name="showIpProfiles"
+            value="1"
+            <%= profile.showIpProfiles ? 'checked' : '' %>
+          />
+          <%= t('account.profile.options.ipProfiles.label') %>
+        </label>
+        <p class="field-hint"><%= t('account.profile.options.ipProfiles.hint') %></p>
+      </div>
+    </fieldset>
+
+    <div class="field">
+      <label for="profile-bio"><%= t('account.profile.fields.bio.label') %></label>
+      <textarea
+        id="profile-bio"
+        name="bio"
+        rows="4"
+        maxlength="500"
+        placeholder="<%= t('account.profile.fields.bio.placeholder') %>"
+      ><%= profile.bio %></textarea>
+      <p class="field-hint"><%= t('account.profile.fields.bio.hint') %></p>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn primary" type="submit" data-icon="💾"><%= t('account.profile.actions.save') %></button>
+    </div>
+  </form>
+</section>
+
+<section class="card mt-md">
+  <h2><%= t('account.profile.premium.heading') %></h2>
+  <p class="text-muted"><%= t('account.profile.premium.intro') %></p>
+  <% const hasPremiumInfo = premium && typeof premium === 'object'; %>
+  <% if (hasPremiumInfo && premium.expiresAt) { %>
+    <% const statusLabel = premium.isActive ? t('account.profile.premium.status.active') : t('account.profile.premium.status.expired'); %>
+    <% const statusClass = premium.isActive ? 'text-success' : 'text-danger'; %>
+    <p>
+      <strong class="<%= statusClass %>"><%= statusLabel %></strong>
+      <% if (premium.expiresAtFormatted) { %>
+        – <span><%= t('account.profile.premium.expiresLabel') %> <%= premium.expiresAtFormatted %></span>
+      <% } %>
+      <% if (premium.expiresAtRelative) { %>
+        <span class="text-muted">(<%= premium.expiresAtRelative %>)</span>
+      <% } %>
+    </p>
+  <% } else { %>
+    <p><%= t('account.profile.premium.none') %></p>
+  <% } %>
+  <form method="post" action="/account/premium/redeem" class="flex flex-wrap gap-sm items-end mt-md">
+    <%- include('../partials/csrf_field') %>
+    <label class="stack-form flex-basis-260">
+      <span class="text-sm text-muted"><%= t('account.profile.premium.field.label') %></span>
+      <input
+        type="text"
+        name="code"
+        minlength="4"
+        maxlength="64"
+        placeholder="<%= t('account.profile.premium.field.placeholder') %>"
+        required
+      />
+    </label>
+    <button class="btn success" data-icon="💎" type="submit"><%= t('account.profile.premium.activate') %></button>
+  </form>
+</section>
+
+<section class="card mt-md">
+  <h2><%= t('account.profile.ip.heading') %></h2>
+  <p class="text-muted"><%= t('account.profile.ip.intro') %></p>
+  <% if (Array.isArray(linkedIpProfiles) && linkedIpProfiles.length) { %>
+    <ul>
+      <% linkedIpProfiles.forEach(function (ipProfile) { %>
+        <li class="flex flex-wrap gap-sm items-center">
+          <code>#<%= ipProfile.shortHash || '?' %></code>
+          <% const ipProfileHref =
+            typeof ipProfile.url === 'string' && ipProfile.url.length
+              ? ipProfile.url
+              : `/profiles/ip/${encodeURIComponent(ipProfile.hash)}`;
+          %>
+          <a class="btn secondary" href="<%= ipProfileHref %>"><%= t('account.profile.ip.view') %></a>
+          <% if (ipProfile.claimedAt) { %>
+            <span class="text-muted"><%= t('account.profile.ip.linkedAt', { date: new Date(ipProfile.claimedAt).toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR') }) %></span>
+          <% } %>
+          <form
+            method="post"
+            action="/account/profile/ip-profiles/<%= encodeURIComponent(ipProfile.hash) %>/unlink"
+            onsubmit="return confirm('<%- t('account.profile.ip.confirmUnlink') %>');"
+          >
+            <%- include('../partials/csrf_field') %>
+            <button class="btn danger" data-icon="🗑️" type="submit"><%= t('account.profile.ip.unlink') %></button>
+          </form>
+        </li>
+      <% }) %>
+    </ul>
+  <% } else { %>
+    <p class="text-muted"><%= t('account.profile.ip.none') %></p>
+  <% } %>
+  <% if (currentIpHash) { %>
+    <p class="mt-sm">
+      <%= t('account.profile.ip.link.intro') %>
+      <% if (currentIpAbsoluteLink) { %>
+        <a href="<%= currentIpAbsoluteLink %>"><%= currentIpAbsoluteLink %></a>
+      <% } else if (currentIpHash) { %>
+        <a href="/profiles/ip/<%= currentIpHash %>">/profiles/ip/<%= currentIpHash %></a>
+      <% } %>
+      <%= t('account.profile.ip.link.outro') %>
+    </p>
+  <% } else { %>
+    <p class="mt-sm text-muted"><%= t('account.profile.ip.link.notDetected') %></p>
+  <% } %>
+</section>

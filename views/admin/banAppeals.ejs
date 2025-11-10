@@ -1,0 +1,118 @@
+<% title = 'Demandes de déban'; %>
+<% const selectedStatus = typeof statusFilter === 'string' ? statusFilter : 'all'; %>
+<h1>Demandes de débannissement</h1>
+
+<form method="get" class="card mb-md">
+  <div class="flex flex-wrap gap-sm items-end">
+    <label class="stack-form">
+      <span class="text-sm text-muted">Rechercher</span>
+      <input
+        type="text"
+        name="search"
+        value="<%= typeof searchTerm === 'string' ? searchTerm : '' %>"
+        placeholder="ID, IP, message…"
+        class="flex-basis-260"
+      />
+    </label>
+    <label class="stack-form">
+      <span class="text-sm text-muted">Statut</span>
+      <select name="status" class="flex-basis-200">
+        <option value="all" <%= selectedStatus === 'all' ? 'selected' : '' %>>Tous</option>
+        <option value="pending" <%= selectedStatus === 'pending' ? 'selected' : '' %>>En attente</option>
+        <option value="accepted" <%= selectedStatus === 'accepted' ? 'selected' : '' %>>Acceptées</option>
+        <option value="rejected" <%= selectedStatus === 'rejected' ? 'selected' : '' %>>Refusées</option>
+      </select>
+    </label>
+    <input type="hidden" name="page" value="1" />
+    <input type="hidden" name="perPage" value="<%= pagination.perPage %>" />
+    <button class="btn" data-icon="🔍" type="submit">Rechercher</button>
+    <% if (searchTerm || selectedStatus !== 'all') { %>
+      <a class="btn secondary" href="/admin/ban-appeals">Réinitialiser</a>
+    <% } %>
+  </div>
+</form>
+
+<section class="card">
+  <h2>Demandes reçues (<%= pagination.totalItems %>)</h2>
+  <% if (!appeals.length) { %>
+    <p>Aucune demande n'a encore été envoyée.</p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>IP</th>
+            <th>Portée</th>
+            <th>Valeur</th>
+            <th>Motif du ban</th>
+            <th>Message de l'appel</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% appeals.forEach(appeal => { %>
+            <tr>
+              <td><code><%= appeal.snowflake_id %></code></td>
+              <td><%= new Date(appeal.created_at).toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR') %></td>
+              <td>
+                <% if (appeal.ip) { %>
+                  <code><%= appeal.ip %></code>
+                <% } else { %>
+                  -
+                <% } %>
+              </td>
+              <td><%= appeal.scope || '-' %></td>
+              <td><%= appeal.value || '-' %></td>
+              <td><%= appeal.reason || '-' %></td>
+              <td>
+                <pre><%= appeal.message %></pre>
+              </td>
+              <td>
+                <% if (appeal.status === 'pending') { %>
+                  <span class="status-pill pending">En attente</span>
+                <% } else if (appeal.status === 'accepted') { %>
+                  <span class="status-pill approved">Acceptée</span>
+                <% } else { %>
+                  <span class="status-pill rejected">Refusée</span>
+                <% } %>
+                <% if (appeal.resolved_at) { %>
+                  <div class="text-sm text-muted">le <%= new Date(appeal.resolved_at).toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR') %></div>
+                <% } %>
+                <% if (appeal.resolved_by) { %>
+                  <div class="text-sm text-muted">par <%= appeal.resolved_by %></div>
+                <% } %>
+              </td>
+              <td>
+                <% if (appeal.status === 'pending') { %>
+                  <div class="flex gap-sm flex-wrap">
+                    <form method="post" action="/admin/ban-appeals/<%= appeal.snowflake_id %>/accept">
+                      <%- include('../partials/csrf_field') %>
+                      <button class="btn success" data-icon="✅" type="submit">Accepter</button>
+                    </form>
+                    <form method="post" action="/admin/ban-appeals/<%= appeal.snowflake_id %>/reject">
+                      <%- include('../partials/csrf_field') %>
+                      <button class="btn danger" data-icon="✖️" type="submit">Refuser</button>
+                    </form>
+                  </div>
+                <% } else { %>
+                  <form
+                    method="post"
+                    action="/admin/ban-appeals/<%= appeal.snowflake_id %>/delete"
+                    onsubmit="return confirm('Supprimer cette demande de déban ?');"
+                  >
+                    <%- include('../partials/csrf_field') %>
+                    <button class="btn danger" data-icon="🗑️" type="submit">Supprimer</button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination }) %>
+  <% } %>
+</section>

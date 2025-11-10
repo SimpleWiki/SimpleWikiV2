@@ -1,0 +1,213 @@
+<% title = t('admin.submissions.title'); %>
+<h1><%= t('admin.submissions.heading') %></h1>
+
+<form method="get" class="card mb-md">
+  <div class="flex flex-wrap gap-sm items-end">
+    <label class="stack-form">
+      <span class="text-sm text-muted"><%= t('admin.submissions.search.label') %></span>
+      <input
+        type="text"
+        name="search"
+        value="<%= typeof searchTerm === 'string' ? searchTerm : '' %>"
+        placeholder="<%= t('admin.submissions.search.placeholder') %>"
+        class="flex-basis-260"
+      />
+    </label>
+    <input type="hidden" name="pendingPage" value="1" />
+    <input type="hidden" name="recentPage" value="1" />
+    <input type="hidden" name="pendingPerPage" value="<%= pendingPagination.perPage %>" />
+    <input type="hidden" name="recentPerPage" value="<%= recentPagination.perPage %>" />
+    <button class="btn" type="submit"><%= t('admin.submissions.search.button') %></button>
+    <% if (searchTerm) { %>
+      <a class="btn secondary" href="/admin/submissions"><%= t('admin.submissions.search.reset') %></a>
+    <% } %>
+  </div>
+</form>
+
+<section class="card mb-xl">
+  <h2><%- t('admin.submissions.pending.title', { count: fmt.number(pendingPagination.totalItems) }) %></h2>
+  <% if (!pending.length) { %>
+    <p><%= t('admin.submissions.pending.empty') %></p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th><%= t('admin.submissions.table.type') %></th>
+            <th><%= t('admin.submissions.table.title') %></th>
+            <th><%= t('admin.submissions.table.proposedAuthor') %></th>
+            <th><%= t('admin.submissions.table.linkedPage') %></th>
+            <th><%= t('admin.submissions.table.tags') %></th>
+            <th>IP</th>
+            <th><%= t('admin.submissions.table.created') %></th>
+            <th><%= t('admin.submissions.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pending.forEach(item => { %>
+            <tr>
+              <td><code><%= item.snowflake_id %></code></td>
+              <td><%= item.type === 'edit' ? t('admin.submissions.types.edit') : t('admin.submissions.types.create') %></td>
+              <td><strong><%= item.title %></strong></td>
+              <% const pendingAuthorHandle = item.author_name || item.submitted_by; %>
+              <% const pendingAuthorRole = item.author_name ? item.authorNameRole : item.submittedByRole; %>
+              <% const pendingAuthorBadges = Array.isArray(pendingAuthorRole?.badges) ? pendingAuthorRole.badges : []; %>
+              <td>
+                <% if (pendingAuthorHandle) { %>
+                  <% const pendingAuthorColor = pendingAuthorRole && pendingAuthorRole.color ? pendingAuthorRole.color : null; %>
+                  <% const pendingAuthorClasses = ['user-handle', 'submission-author']; %>
+                  <% const pendingAuthorStyle = pendingAuthorColor && pendingAuthorColor.hasColor ? pendingAuthorColor.style : ''; %>
+                  <% if (pendingAuthorColor && pendingAuthorColor.hasColor) { pendingAuthorClasses.push('role-colored-text'); pendingAuthorClasses.push(pendingAuthorColor.className); } %>
+                  <span class="user-handle-decorated">
+                    <strong class="<%= pendingAuthorClasses.join(' ') %>" style="<%= pendingAuthorStyle %>">
+                      <%= pendingAuthorHandle %>
+                    </strong>
+                    <%- include('../partials/userBadges', {
+                      badges: pendingAuthorBadges,
+                      listClass: ['user-handle-badges', 'user-handle-badges--inline'],
+                      itemClass: 'user-handle-badge-item',
+                      iconClass: 'user-handle-badge-icon',
+                      srOnlyClass: 'sr-only',
+                      ariaLabel: t('common.authorBadgesAria'),
+                    }) %>
+                  </span>
+                <% } else { %>
+                  —
+                <% } %>
+              </td>
+              <td>
+                <% if (item.current_slug) { %>
+                  <a href="/wiki/<%= item.current_slug %>"><code><%= item.current_slug %></code></a>
+                <% } else { %>
+                  —
+                <% } %>
+              </td>
+              <td>
+                <% if (item.tag_list && item.tag_list.length) { %>
+                  <%= item.tag_list.join(', ') %>
+                <% } else { %>
+                  —
+                <% } %>
+              </td>
+              <td><%= item.ip || '—' %></td>
+              <td><%= fmt.dateTime(item.created_at) %></td>
+              <td>
+                <a class="btn" href="/admin/submissions/<%= item.snowflake_id %>"><%= t('admin.submissions.actions.view') %></a>
+                <form method="post" action="/admin/submissions/<%= item.snowflake_id %>/approve">
+                  <%- include('../partials/csrf_field') %>
+                  <button class="btn success" type="submit"><%= t('admin.submissions.actions.approve') %></button>
+                </form>
+                <form method="post" action="/admin/submissions/<%= item.snowflake_id %>/reject">
+                  <%- include('../partials/csrf_field') %>
+                  <button class="btn danger" type="submit"><%= t('admin.submissions.actions.reject') %></button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination: pendingPagination }) %>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2><%- t('admin.submissions.recent.title', { count: fmt.number(recentPagination.totalItems) }) %></h2>
+  <% if (!recent.length) { %>
+    <p><%= t('admin.submissions.recent.empty') %></p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th><%= t('admin.submissions.table.type') %></th>
+            <th><%= t('admin.submissions.table.title') %></th>
+            <th><%= t('admin.submissions.table.proposedAuthor') %></th>
+            <th><%= t('admin.submissions.table.linkedPage') %></th>
+            <th><%= t('admin.submissions.table.tags') %></th>
+            <th>IP</th>
+            <th><%= t('admin.submissions.table.created') %></th>
+            <th><%= t('admin.submissions.table.status') %></th>
+            <th><%= t('admin.submissions.table.reviewed') %></th>
+            <th><%= t('admin.submissions.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% recent.forEach(item => { %>
+            <tr>
+              <td><code><%= item.snowflake_id %></code></td>
+              <td><%= item.type === 'edit' ? t('admin.submissions.types.edit') : t('admin.submissions.types.create') %></td>
+              <td><strong><%= item.title %></strong></td>
+              <% const recentAuthorHandle = item.author_name || item.submitted_by; %>
+              <% const recentAuthorRole = item.author_name ? item.authorNameRole : item.submittedByRole; %>
+              <% const recentAuthorBadges = Array.isArray(recentAuthorRole?.badges) ? recentAuthorRole.badges : [];
+              %>
+              <td>
+                <% if (recentAuthorHandle) { %>
+                  <% const recentAuthorColor = recentAuthorRole && recentAuthorRole.color ? recentAuthorRole.color : null; %>
+                  <% const recentAuthorClasses = ['user-handle', 'submission-author']; %>
+                  <% const recentAuthorStyle = recentAuthorColor && recentAuthorColor.hasColor ? recentAuthorColor.style : ''; %>
+                  <% if (recentAuthorColor && recentAuthorColor.hasColor) { recentAuthorClasses.push('role-colored-text'); recentAuthorClasses.push(recentAuthorColor.className); } %>
+                  <span class="user-handle-decorated">
+                    <strong class="<%= recentAuthorClasses.join(' ') %>" style="<%= recentAuthorStyle %>">
+                      <%= recentAuthorHandle %>
+                    </strong>
+                    <%- include('../partials/userBadges', {
+                      badges: recentAuthorBadges,
+                      listClass: ['user-handle-badges', 'user-handle-badges--inline'],
+                      itemClass: 'user-handle-badge-item',
+                      iconClass: 'user-handle-badge-icon',
+                      srOnlyClass: 'sr-only',
+                      ariaLabel: t('common.authorBadgesAria'),
+                    }) %>
+                  </span>
+                <% } else { %>
+                  —
+                <% } %>
+              </td>
+              <td>
+                <% if (item.current_slug) { %>
+                  <a href="/wiki/<%= item.current_slug %>"><code><%= item.current_slug %></code></a>
+                <% } else { %>
+                  —
+                <% } %>
+              </td>
+              <td>
+                <% if (item.tag_list && item.tag_list.length) { %>
+                  <%= item.tag_list.join(', ') %>
+                <% } else { %>
+                  —
+                <% } %>
+              </td>
+              <td><%= item.ip || '—' %></td>
+              <td><%= fmt.dateTime(item.created_at) %></td>
+              <td>
+                <% if (item.status === 'pending') { %>
+                  <span class="status status-pill pending"><%= t('admin.submissions.status.pending') %></span>
+                <% } else if (item.status === 'approved') { %>
+                  <span class="status status-pill approved"><%= t('admin.submissions.status.approved') %></span>
+                <% } else { %>
+                  <span class="status status-pill rejected"><%= t('admin.submissions.status.rejected') %></span>
+                <% } %>
+              </td>
+              <td>
+                <% if (item.reviewed_at) { %>
+                  <time datetime="<%= item.reviewed_at %>"><%= fmt.dateTime(item.reviewed_at) %></time>
+                <% } else { %>
+                  —
+                <% } %>
+              </td>
+              <td>
+                <a class="btn" href="/admin/submissions/<%= item.snowflake_id %>"><%= t('admin.submissions.actions.view') %></a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination: recentPagination }) %>
+  <% } %>
+</section>
+

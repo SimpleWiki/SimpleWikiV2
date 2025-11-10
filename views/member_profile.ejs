@@ -1,0 +1,170 @@
+<%
+  title = (profile.displayName || profile.username) + ' · ' + t('member.titleSuffix');
+  const bannerStyle = profile.bannerUrl
+    ? `background-image: url('${encodeURI(profile.bannerUrl).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29')}')`
+    : '';
+  const avatarInitialSource = (profile.displayName || profile.username || '?').trim();
+  const avatarInitial = avatarInitialSource
+    ? avatarInitialSource.charAt(0).toUpperCase()
+    : '?';
+%>
+<section class="profile-public">
+  <div
+    class="profile-public__banner"
+    style="<%= bannerStyle %>"
+  ></div>
+  <div class="profile-public__content card">
+    <div class="profile-public__header">
+      <div class="profile-public__avatar">
+        <% if (profile.avatarUrl) { %>
+          <img src="<%= profile.avatarUrl %>" alt="<%= t('member.avatarAlt', { user: (profile.displayName || profile.username) }) %>" loading="lazy" />
+        <% } else { %>
+          <span aria-hidden="true"><%= avatarInitial %></span>
+        <% } %>
+        <span class="sr-only"><%= t('member.avatarAlt', { user: (profile.displayName || profile.username) }) %></span>
+      </div>
+      <div class="profile-public__identity">
+        <% const heroName = profile.displayName || profile.username; %>
+        <% const roleColor = profile.roleColor && profile.roleColor.hasColor ? profile.roleColor : null; %>
+        <% const nameClasses = ['user-handle']; %>
+        <% const nameStyle = roleColor ? roleColor.style : ''; %>
+        <% if (roleColor) { nameClasses.push('role-colored-text'); if (roleColor.className) { nameClasses.push(roleColor.className); } } %>
+        <h1 class="profile-public__name <%= nameClasses.join(' ') %>" style="<%= nameStyle %>"><%= heroName %></h1>
+        <% const usernameClasses = ['user-handle']; %>
+        <% const usernameStyle = roleColor ? roleColor.style : ''; %>
+        <% if (roleColor) { usernameClasses.push('role-colored-text'); if (roleColor.className) { usernameClasses.push(roleColor.className); } } %>
+        <% const profileBadges = profile.showBadges && Array.isArray(profile.badges) ? profile.badges : []; %>
+        <p class="profile-public__username">
+          <span class="user-handle-decorated">
+            <span class="<%= usernameClasses.join(' ') %>" style="<%= usernameStyle %>">@<%= profile.username %></span>
+            <%- include('partials/userBadges', {
+              badges: profileBadges,
+              listClass: ['user-handle-badges', 'user-handle-badges--inline'],
+              itemClass: 'user-handle-badge-item',
+              iconClass: 'user-handle-badge-icon',
+              srOnlyClass: 'sr-only',
+              ariaLabel: t('member.badges.aria'),
+            }) %>
+          </span>
+        </p>
+        <% const hasRoles = Array.isArray(profile.roles) && profile.roles.length; %>
+        <% if (hasRoles) { %>
+          <div class="profile-public__roles" aria-label="<%= t('member.roles.aria') %>">
+            <span class="profile-public__roles-label">
+              <%= profile.roles.length > 1 ? t('member.roles.many') : t('member.roles.one') %>
+            </span>
+            <ul class="profile-public__roles-list">
+              <% profile.roles.forEach(function (role) { %>
+                <% if (!role || !role.name) { return; } %>
+                <% const roleColor = role.color && role.color.hasColor ? role.color : null; %>
+                <% const textClasses = ['profile-public__role-chip-text']; %>
+                <% const textStyle = roleColor ? roleColor.style : ''; %>
+                <% if (roleColor) { textClasses.push('role-colored-text'); if (roleColor.className) { textClasses.push(roleColor.className); } } %>
+                <li class="profile-public__roles-item">
+                  <span class="profile-public__role-chip">
+                    <span class="<%= textClasses.join(' ') %>" style="<%= textStyle %>"><%= role.name %></span>
+                  </span>
+                </li>
+              <% }) %>
+            </ul>
+          </div>
+        <% } else if (profile.roleName) { %>
+          <p class="profile-public__role">Rôle&nbsp;: <strong><%= profile.roleName %></strong></p>
+        <% } %>
+        <% if (profile.showBadges && Array.isArray(profile.badges) && profile.badges.length) { %>
+          <ul class="profile-public__badges" aria-label="Badges">
+            <% profile.badges.forEach(function (badge) { %>
+              <li class="profile-public__badge" title="<%= badge.name %>">
+                <span class="profile-public__badge-icon">
+                  <% if (badge.imageUrl) { %>
+                    <img src="<%= badge.imageUrl %>" alt="" loading="lazy" />
+                  <% } else if (badge.emoji) { %>
+                    <%= badge.emoji %>
+                  <% } %>
+                </span>
+                <span class="profile-public__badge-label"><%= badge.name %></span>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (profile.isBanned) { %>
+      <div class="alert alert-error mt-sm">
+        <p><strong><%= t('member.banned.title') %></strong></p>
+        <% if (profile.banReason) { %>
+          <p><%= t('member.banned.reason', { reason: profile.banReason }) %></p>
+        <% } %>
+        <% if (profile.bannedAt) { %>
+          <% const locale = (lang === 'en') ? 'en-US' : 'fr-FR'; %>
+          <p><%= t('member.banned.since', { date: new Date(profile.bannedAt).toLocaleString(locale) }) %></p>
+        <% } %>
+      </div>
+    <% } %>
+
+    <% if (profile.showBio) { %>
+      <% if (profile.bio) { %>
+        <p class="profile-public__bio"><%= profile.bio %></p>
+      <% } else { %>
+        <p class="profile-public__bio profile-public__bio--empty text-muted"><%= t('member.bio.empty') %></p>
+      <% } %>
+    <% } else { %>
+      <p class="profile-public__bio profile-public__bio--empty text-muted"><%= t('member.bio.private') %></p>
+    <% } %>
+
+    <% if (profile.showStats) { %>
+      <div class="profile-public__stats">
+        <div>
+          <span class="profile-public__stat-value"><%= profile.totalPages %></span>
+          <span class="profile-public__stat-label"><%= t('member.stats.published') %></span>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (profile.showRecentPages) { %>
+      <div class="profile-public__recent">
+        <h2><%= t('member.recent.title') %></h2>
+        <% if (profile.recentPages && profile.recentPages.length) { %>
+          <ul>
+            <% profile.recentPages.forEach(function(page) { %>
+              <li>
+                <a href="/wiki/<%= page.slug_id %>"><%= page.title %></a>
+                <span class="profile-public__recent-date">
+                  <% const locale = (lang === 'en') ? 'en-US' : 'fr-FR'; %>
+                  <%= page.created_at ? new Date(page.created_at).toLocaleDateString(locale) : '' %>
+                </span>
+              </li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <p class="text-muted"><%= t('member.recent.empty') %></p>
+        <% } %>
+      </div>
+    <% } %>
+
+    <% if (profile.showIpProfiles) { %>
+      <div class="profile-public__recent">
+        <h2><%= t('member.ip.title') %></h2>
+        <% if (Array.isArray(profile.ipProfiles) && profile.ipProfiles.length) { %>
+          <ul>
+            <% profile.ipProfiles.forEach(function(ipProfile) { %>
+              <li>
+                <a href="/profiles/ip/<%= encodeURIComponent(ipProfile.hash) %>">
+                  <%= t('member.ip.profileLabel', { n: ipProfile.shortHash || '?' }) %>
+                </a>
+                <% if (ipProfile.claimedAt) { %>
+                  <span class="profile-public__recent-date">
+                    <%= t('member.ip.linkedAt', { date: new Date(ipProfile.claimedAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR') }) %>
+                  </span>
+                <% } %>
+              </li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <p class="text-muted"><%= t('member.ip.empty') %></p>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</section>

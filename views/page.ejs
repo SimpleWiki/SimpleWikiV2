@@ -1,0 +1,309 @@
+<% title = page.title; %>
+<div class="page-header card">
+  <div class="heading">
+    <h1 class="page-title"><%= page.title %></h1>
+    <div class="meta">
+      <span><%= t('page.meta.created') %> <%= page.created_at %></span>
+      <% if (page.updated_at) { %><span>• <%= t('page.meta.updated') %> <%= page.updated_at %></span><% } %>
+      <% const pageAuthorColor = page.authorRole && page.authorRole.color ? page.authorRole.color : null; %>
+      <% const pageAuthorClasses = ['user-handle', 'page-author']; %>
+      <% const pageAuthorStyle = pageAuthorColor && pageAuthorColor.hasColor ? pageAuthorColor.style : ''; %>
+      <% if (pageAuthorColor && pageAuthorColor.hasColor) { pageAuthorClasses.push('role-colored-text'); pageAuthorClasses.push(pageAuthorColor.className); } %>
+      <% const pageAuthorBadges = Array.isArray(page?.authorRole?.badges) ? page.authorRole.badges : []; %>
+      <span>
+        • <%= t('page.meta.author') %>
+        <span class="user-handle-decorated">
+          <strong class="<%= pageAuthorClasses.join(' ') %>" style="<%= pageAuthorStyle %>"><%= page.author || 'Anonyme' %></strong>
+          <%- include('partials/userBadges', {
+            badges: pageAuthorBadges,
+            listClass: ['user-handle-badges', 'user-handle-badges--inline'],
+            itemClass: 'user-handle-badge-item',
+            iconClass: 'user-handle-badge-icon',
+            srOnlyClass: 'sr-only',
+            ariaLabel: t('common.authorBadgesAria'),
+          }) %>
+        </span>
+      </span>
+      <span>• <%= t('page.meta.likes') %> <strong data-like-count-for="<%= page.slug_id %>"><%= page.likes %></strong></span>
+      <span>• <%= t('page.meta.comments') %> <strong><%= commentPagination.totalItems %></strong></span>
+      <span>• <%= t('page.meta.views') %> <strong><%= page.views %></strong></span>
+    </div>
+  </div>
+  <div class="actions">
+    <form action="/wiki/<%= page.slug_id %>/like" method="post" data-like-form-for="<%= page.slug_id %>">
+      <%- include('partials/csrf_field') %>
+      <button
+        class="btn <%= page.userLiked ? 'unlike' : 'like' %>"
+        data-icon="<%= page.userLiked ? '💔' : '💖' %>"
+        data-label-liked="<%= t('page.actions.unlike') %>"
+        data-label-unliked="<%= t('page.actions.like') %>"
+        type="submit"
+      >
+        <%= page.userLiked ? t('page.actions.unlike') : t('page.actions.like') %> (<%= page.likes %>)
+      </button>
+    </form>
+    <button class="btn copy" data-icon="🔗" onclick="navigator.clipboard.writeText(location.origin + '/wiki/<%= page.slug_id %>')"><%= t('common.copyLink') %></button>
+    <% const permissionFlags =
+      typeof permissions !== 'undefined' && permissions && typeof permissions === 'object'
+        ? permissions
+        : {}; %>
+    <% const currentUser = typeof user !== 'undefined' && user ? user : null; %>
+    <% const isAdmin = !!permissionFlags.is_admin; %>
+    <% const canPublishDirectly = !!(permissionFlags.is_admin || permissionFlags.is_contributor); %>
+    <% const canSubmitEdits = !!permissionFlags.can_submit_pages; %>
+    <% if (isAdmin) { %>
+      <a class="btn" data-icon="✏️" href="/edit/<%= page.slug_id %>"><%= t('page.actions.edit') %></a>
+      <a class="btn" data-icon="📜" href="/wiki/<%= page.slug_id %>/history"><%= t('page.actions.history') %></a>
+      <form action="/delete/<%= page.slug_id %>" method="post" onsubmit="return confirm('<%= t('page.actions.deleteConfirm') %>')">
+        <%- include('partials/csrf_field') %>
+        <input type="hidden" name="_method" value="DELETE" />
+        <button class="btn danger" data-icon="🗑️"><%= t('page.actions.delete') %></button>
+      </form>
+    <% } else if (canPublishDirectly) { %>
+      <a class="btn" data-icon="✏️" href="/edit/<%= page.slug_id %>"><%= t('page.actions.edit') %></a>
+    <% } else if (canSubmitEdits) { %>
+      <a class="btn" data-icon="✏️" href="/edit/<%= page.slug_id %>"><%= t('page.actions.suggestEdit') %></a>
+    <% } %>
+  </div>
+  <% if (Array.isArray(pageReactions) && pageReactions.length) { %>
+    <div class="page-reactions" data-page-reactions>
+      <%- include('partials/reactionBar', {
+        target: 'page',
+        slug: page.slug_id,
+        reactions: pageReactions,
+        formAction: `/wiki/${page.slug_id}/reactions`,
+        condensed: false
+      }) %>
+    </div>
+  <% } %>
+</div>
+
+<div class="card prose">
+  <div><%- html %></div>
+</div>
+
+<% if (tags && tags.length) { %>
+  <div class="card">
+    <strong><%= t('page.tags.title') %></strong>
+    <div class="tags-row mt-xs">
+      <% tags.forEach(t => { %>
+        <a class="tag" href="/tags/<%= t %>"><%= t %></a>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
+
+  <% const commentUser = typeof user !== 'undefined' && user ? user : null; %>
+  <% const commentPermissionFlags =
+    typeof permissions !== 'undefined' && permissions && typeof permissions === 'object'
+      ? permissions
+      : {}; %>
+  <% const canComment = !!commentPermissionFlags.can_comment; %>
+  <% const adminPreferredName = commentUser && commentPermissionFlags.is_admin
+    ? (commentUser.display_name || commentUser.username)
+    : null; %>
+  <% const commentValues = (commentFeedback && commentFeedback.values) || {}; %>
+  <% const commentAuthorValue = adminPreferredName || commentValues.author || ''; %>
+  <% const commentRole = commentUser && commentUser.role_color ? commentUser.role_color : null; %>
+  <% const commentRoleClasses = ['user-handle']; %>
+  <% const commentRoleStyle = commentRole && commentRole.hasColor ? commentRole.style : ''; %>
+  <% if (commentRole && commentRole.hasColor) { commentRoleClasses.push('role-colored-text'); commentRoleClasses.push(commentRole.className); } %>
+  <% const commentUserBadges = Array.isArray(currentUserBadges) ? currentUserBadges : []; %>
+<section class="card comments" id="comments">
+  <h2 class="mt-0">Commentaires</h2>
+  <% if (Array.isArray(comments) && comments.length) { %>
+    <ul class="comment-list" data-comment-thread>
+      <% comments.forEach((comment) => { %>
+        <%- include('partials/comment', {
+          comment,
+          page,
+          canComment,
+          ownCommentTokens,
+          maxCommentDepth,
+        }) %>
+      <% }) %>
+    </ul>
+  <% } else { %>
+    <p class="comment-empty">Aucun commentaire pour le moment.</p>
+  <% } %>
+
+  <% if (commentPagination && commentPagination.totalItems > 0) { %>
+    <div class="table-footer comment-pagination">
+      <div class="per-page-control">
+        <label for="comments-per-page" class="nowrap">Commentaires par page</label>
+        <select
+          id="comments-per-page"
+          onchange="if (this.value) window.location.href = this.value;"
+        >
+          <% commentPagination.perPageOptionLinks.forEach(option => { %>
+            <option value="<%= option.url %>#comments" <%= option.selected ? 'selected' : '' %>><%= option.value %></option>
+          <% }) %>
+        </select>
+      </div>
+      <span>Page <%= commentPagination.page %> sur <%= commentPagination.totalPages %></span>
+      <div class="pager">
+        <% if (commentPagination.hasPrevious) { %>
+          <a class="btn" data-icon="⬅️" href="<%= commentPagination.previousUrl %>#comments">Précédent</a>
+        <% } else { %>
+          <span class="btn" data-icon="⬅️" aria-disabled="true">Précédent</span>
+        <% } %>
+        <% if (commentPagination.hasNext) { %>
+          <a class="btn" data-icon="➡️" href="<%= commentPagination.nextUrl %>#comments">Suivant</a>
+        <% } else { %>
+          <span class="btn" data-icon="➡️" aria-disabled="true">Suivant</span>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (!canComment) { %>
+    <p class="text-muted">Les commentaires sont désactivés pour votre rôle.</p>
+  <% } else { %>
+  <% const initialParentId = commentFeedback && commentFeedback.values ? commentFeedback.values.parentId || '' : ''; %>
+  <% const commentCaptchaConfig = typeof captchaConfig !== 'undefined' && captchaConfig ? captchaConfig : null; %>
+  <% const csrfQuerySuffix =
+    typeof csrfToken === 'string' && csrfToken.length
+      ? `?_csrf=${encodeURIComponent(csrfToken)}`
+      : '';
+  %>
+  <form
+    class="comment-form"
+    method="post"
+    action="/wiki/<%= page.slug_id %>/comments<%= csrfQuerySuffix %>"
+    enctype="multipart/form-data"
+    data-comment-preview-form
+    data-preview-endpoint="/wiki/<%= page.slug_id %>/comments/preview"
+    data-initial-parent="<%= initialParentId %>"
+  >
+    <%- include('partials/csrf_field') %>
+    <input
+      type="hidden"
+      name="parentId"
+      value="<%= initialParentId %>"
+      data-comment-parent-input
+    >
+    <div class="reply-target" data-reply-target <%= initialParentId ? '' : 'hidden' %>>
+      <span>Réponse à <strong data-reply-target-label></strong></span>
+      <button class="btn tertiary" type="button" data-clear-reply>Annuler</button>
+    </div>
+    <% if (adminPreferredName) { %>
+      <div class="field">
+        <p class="text-muted">
+          Vous commentez en tant que
+          <span class="user-handle-decorated">
+            <strong class="<%= commentRoleClasses.join(' ') %>" style="<%= commentRoleStyle %>"><%= commentAuthorValue %></strong>
+            <%- include('partials/userBadges', {
+              badges: commentUserBadges,
+              listClass: ['user-handle-badges', 'user-handle-badges--inline'],
+              itemClass: 'user-handle-badge-item',
+              iconClass: 'user-handle-badge-icon',
+              srOnlyClass: 'sr-only',
+              ariaLabel: 'Vos badges',
+            }) %>
+          </span>.
+        </p>
+        <input type="hidden" name="author" value="<%= commentAuthorValue %>">
+      </div>
+    <% } else { %>
+      <div class="field">
+        <label for="comment-author">Nom ou pseudo (facultatif)</label>
+        <input
+          id="comment-author"
+          type="text"
+          name="author"
+          maxlength="80"
+          value="<%= commentAuthorValue %>"
+        >
+      </div>
+    <% } %>
+    <% const commentPreviewId = `comment-preview-${page.slug_id}`; %>
+    <div class="field" data-preview-root>
+      <label for="comment-body">Votre message <span class="text-required">*</span></label>
+      <textarea
+        id="comment-body"
+        name="body"
+        rows="5"
+        maxlength="2000"
+        required
+        data-preview-source
+        data-preview-target="#<%= commentPreviewId %>"
+      ><%= commentValues.body || '' %></textarea>
+      <p class="field-hint" data-preview-status aria-live="polite">
+        L'aperçu s'affichera automatiquement pendant votre saisie.
+      </p>
+    </div>
+    <div class="field" data-preview-container hidden>
+      <span class="comment-preview-label">Aperçu du rendu</span>
+      <div
+        class="comment-preview prose"
+        id="<%= commentPreviewId %>"
+        data-preview-body
+      ></div>
+    </div>
+    <div class="field">
+      <label for="comment-attachments">Pièces jointes (facultatif)</label>
+      <input
+        id="comment-attachments"
+        type="file"
+        name="attachments"
+        accept="image/*,application/pdf,text/plain"
+        multiple
+        data-comment-attachment-input
+      />
+      <p class="field-hint">
+        Formats acceptés : images, PDF ou texte. Taille maximale : 5&nbsp;Mo par fichier (5 fichiers au total).
+      </p>
+      <ul
+        class="attachment-preview-list"
+        data-comment-attachment-preview
+        hidden
+        aria-hidden="true"
+      ></ul>
+    </div>
+    <% if (commentCaptchaConfig) { %>
+      <div class="field">
+        <fieldset class="captcha-selector">
+          <legend>Vérification anti-robot</legend>
+          <p class="form-help">
+            Répondez à la question suivante pour envoyer votre commentaire.
+          </p>
+          <p class="captcha-question">
+            <strong><%= commentCaptchaConfig.question %> = ?</strong>
+          </p>
+          <label for="comment-captcha">
+            Votre réponse <span class="text-required">*</span>
+          </label>
+          <input
+            id="comment-captcha"
+            type="text"
+            name="captcha"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            required
+            autocomplete="off"
+          />
+          <input
+            type="hidden"
+            name="captchaToken"
+            value="<%= commentCaptchaConfig.token %>"
+          />
+        </fieldset>
+      </div>
+    <% } else { %>
+      <div class="card warning">
+        La vérification anti-robot est momentanément indisponible. Merci de réessayer plus tard.
+      </div>
+    <% } %>
+    <div class="field honeypot">
+      <label for="comment-website">Ne pas remplir</label>
+      <input id="comment-website" type="text" name="website" tabindex="-1" autocomplete="off">
+    </div>
+    <button class="btn success" data-icon="📨" type="submit">Envoyer mon commentaire</button>
+  </form>
+  <% if (!commentCaptchaConfig) { %>
+  <div class="card warning">
+    La publication de commentaires est temporairement désactivée en raison d'un problème de vérification anti-robot.
+  </div>
+  <% } %>
+  <% } %>
+</section>

@@ -1,0 +1,1166 @@
+<% title='Rôles'; %>
+<h1>Gestion des rôles</h1>
+<p class="text-muted">Créez de nouveaux rôles et ajustez leurs permissions. Les utilisateurs associés héritent automatiquement des permissions de leur rôle.</p>
+
+<%
+  const permissionGroups = Array.isArray(permissionCategories)
+    ? permissionCategories
+    : [];
+%>
+
+<section class="role-manager">
+  <% if (!roles || !roles.length) { %>
+    <p class="card">Aucun rôle défini pour le moment.</p>
+  <% } else { %>
+    <% const everyoneRole = roles.find((role) => role.isEveryone); %>
+    <% const everyoneRoleName = everyoneRole ? everyoneRole.name : 'Everyone'; %>
+    <aside class="role-sidebar card" aria-label="Rôles disponibles">
+      <div class="role-sidebar-header">
+        <div class="role-sidebar-header-text">
+          <h2 class="h3">Rôles existants</h2>
+          <p class="text-sm text-muted">Sélectionnez un rôle pour afficher et modifier ses permissions.</p>
+        </div>
+        <div class="role-sidebar-actions">
+          <button
+            type="button"
+            class="btn secondary"
+            data-icon="➕"
+            data-action="create-role"
+          >
+            Nouveau rôle
+          </button>
+        </div>
+      </div>
+      <ul class="role-selector" role="list">
+        <% roles.forEach((role, index) => { %>
+          <li
+            class="role-selector-item"
+            draggable="true"
+            data-role-id="<%= role.id %>"
+            id="role-<%= role.id %>"
+          >
+            <button
+              type="button"
+              class="role-choice <%= index === 0 ? 'is-active' : '' %>"
+              data-role-id="<%= role.id %>"
+              aria-pressed="<%= index === 0 ? 'true' : 'false' %>"
+            >
+              <span class="role-choice-name"><%= role.name %></span>
+              <span class="badge"><%= role.userCount || 0 %> utilisateur<%= (role.userCount || 0) > 1 ? 's' : '' %></span>
+            </button>
+          </li>
+        <% }) %>
+      </ul>
+      <div class="role-sidebar-footer">
+        <button
+          type="button"
+          class="btn primary"
+          data-icon="💾"
+          data-action="save-role-order"
+          disabled
+        >
+          Enregistrer l'ordre
+        </button>
+        <p class="role-sidebar-status" data-role-order-status hidden>
+          Ordre modifié. Enregistrez pour appliquer.
+        </p>
+      </div>
+    </aside>
+    <div class="role-detail">
+      <% roles.forEach((role, index) => { %>
+        <article class="card role-detail-panel" data-role-id="<%= role.id %>" <%= index === 0 ? '' : 'hidden' %>>
+          <% const roleColorScheme = role.color || null; %>
+          <% const roleColorPresentation = role.colorPresentation; %>
+          <% const roleColorValues = Array.isArray(roleColorScheme && roleColorScheme.colors) ? roleColorScheme.colors : []; %>
+          <% const roleColorMode = roleColorScheme ? roleColorScheme.mode : ''; %>
+          <% const isAdministratorRole = Boolean(role.isAdministrator); %>
+          <div class="role-editor">
+            <div class="role-summary">
+              <div class="role-summary-header">
+                <h2 class="h3"><%= role.name %></h2>
+                <span class="badge"><%= role.userCount || 0 %> utilisateur<%= (role.userCount || 0) > 1 ? 's' : '' %></span>
+              </div>
+              <% const hasRoleColor = roleColorPresentation && roleColorPresentation.hasColor; %>
+              <% const previewClasses = ['role-color-preview']; if (!hasRoleColor) { previewClasses.push('is-empty'); } %>
+              <div class="<%= previewClasses.join(' ') %>" data-role-color-preview aria-hidden="true">
+                <span
+                  class="role-color-chip role-color-visual <%= hasRoleColor ? roleColorPresentation.className : '' %>"
+                  data-role-color-chip
+                  style="<%= hasRoleColor ? roleColorPresentation.style : '' %>"
+                ></span>
+                <span class="role-color-value" data-role-color-label>
+                  <%= hasRoleColor ? roleColorPresentation.label : 'Couleur par défaut' %>
+                </span>
+              </div>
+              <% if (role.description) { %>
+                <p class="text-muted"><%= role.description %></p>
+              <% } %>
+              <% if (role.is_system) { %>
+                <p class="text-xs text-muted">Rôle système protégé</p>
+              <% } %>
+              <% if (!role.is_system && !role.isEveryone) { %>
+                <div class="role-summary-footer">
+                  <% if ((role.userCount || 0) === 0) { %>
+                    <form method="post" action="/admin/roles/<%= role.id %>" aria-label="Supprimer le rôle <%= role.name %>">
+                      <%- include('../partials/csrf_field') %>
+                      <input type="hidden" name="_action" value="delete" />
+                      <button class="btn danger" type="submit" data-icon="🗑️" onclick="return confirm('Supprimer définitivement ce rôle ?');">Supprimer le rôle</button>
+                    </form>
+                  <% } else { %>
+                    <p class="text-sm text-muted">
+                      Ce rôle est actuellement attribué à <strong><%= role.userCount %></strong>
+                      utilisateur<%= role.userCount > 1 ? 's' : '' %>. Réassignez-les vers <%= everyoneRoleName %> pour pouvoir supprimer ce rôle.
+                    </p>
+                    <form method="post" action="/admin/roles/<%= role.id %>" class="role-reassign-form" aria-label="Réassigner les utilisateurs de <%= role.name %> vers <%= everyoneRoleName %>">
+                      <%- include('../partials/csrf_field') %>
+                      <input type="hidden" name="_action" value="reassign_to_everyone" />
+                      <button class="btn secondary" type="submit" data-icon="🔁">Réassigner tous les utilisateurs vers <%= everyoneRoleName %></button>
+                    </form>
+                  <% } %>
+                </div>
+              <% } %>
+            </div>
+            <form method="post" action="/admin/roles/<%= role.id %>" class="role-permissions-column" aria-label="Mettre à jour les permissions pour <%= role.name %>">
+              <%- include('../partials/csrf_field') %>
+              <div class="role-metadata">
+                <fieldset class="role-color-editor" data-role-color-editor>
+                  <legend>Style du pseudo</legend>
+                  <label class="stack-form role-color-mode">
+                    <span class="text-sm text-muted">Type de couleur</span>
+                    <select name="color_mode" data-role-color-mode>
+                      <option value="" <%= roleColorMode ? '' : 'selected' %>>Couleur par défaut</option>
+                      <option value="solid" <%= roleColorMode === 'solid' ? 'selected' : '' %>>Couleur unie</option>
+                      <option value="gradient" <%= roleColorMode === 'gradient' ? 'selected' : '' %>>Dégradé (2 à 5 couleurs)</option>
+                      <option value="rainbow" <%= roleColorMode === 'rainbow' ? 'selected' : '' %>>Arc-en-ciel animé (2 à 5 couleurs)</option>
+                    </select>
+                  </label>
+                  <div class="role-color-fields" data-role-color-fields="solid" <%= roleColorMode === 'solid' ? '' : 'hidden' %>>
+                    <div class="role-color-collection role-color-collection--single">
+                      <div class="role-color-item" data-role-color-item>
+                        <label class="role-color-picker">
+                          <input
+                            type="color"
+                            name="color_solid"
+                            value="<%= roleColorMode === 'solid' ? (roleColorValues[0] || '#4F46E5') : '#4F46E5' %>"
+                            data-role-color-input
+                          />
+                          <span class="role-color-picker-label">Couleur</span>
+                          <span class="role-color-picker-value" data-role-color-hex>
+                            <%= roleColorMode === 'solid' ? (roleColorValues[0] || '#4F46E5') : '#4F46E5' %>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="role-color-fields" data-role-color-fields="gradient" <%= roleColorMode === 'gradient' ? '' : 'hidden' %>>
+                    <div
+                      class="role-color-collection"
+                      data-role-color-collection="gradient"
+                      data-role-color-min="2"
+                      data-role-color-max="5"
+                    >
+                      <% const gradientDefaults = roleColorMode === 'gradient' && roleColorValues.length ? roleColorValues : ['#8B5CF6', '#EC4899']; %>
+                      <% gradientDefaults.slice(0, 5).forEach((color, colorIndex) => { %>
+                        <div class="role-color-item" data-role-color-item>
+                          <label class="role-color-picker">
+                            <input
+                              type="color"
+                              name="color_gradient[]"
+                              value="<%= color %>"
+                              data-role-color-input
+                            />
+                            <span class="role-color-picker-label" data-role-color-item-label>Couleur <%= colorIndex + 1 %></span>
+                            <span class="role-color-picker-value" data-role-color-hex><%= color %></span>
+                          </label>
+                          <button
+                            type="button"
+                            class="role-color-remove"
+                            data-role-color-remove
+                            aria-label="Retirer cette couleur"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      <% }) %>
+                    </div>
+                    <div class="role-color-collection-actions">
+                      <button
+                        type="button"
+                        class="btn secondary role-color-add-button"
+                        data-role-color-add="gradient"
+                        data-icon="➕"
+                      >
+                        Ajouter une couleur
+                      </button>
+                    </div>
+                  </div>
+                  <div class="role-color-fields" data-role-color-fields="rainbow" <%= roleColorMode === 'rainbow' ? '' : 'hidden' %>>
+                    <div
+                      class="role-color-collection"
+                      data-role-color-collection="rainbow"
+                      data-role-color-min="2"
+                      data-role-color-max="5"
+                    >
+                      <% const rainbowDefaults = roleColorMode === 'rainbow' && roleColorValues.length ? roleColorValues : ['#EF4444', '#F97316', '#FBBF24', '#22C55E', '#3B82F6']; %>
+                      <% rainbowDefaults.slice(0, 5).forEach((color, colorIndex) => { %>
+                        <div class="role-color-item" data-role-color-item>
+                          <label class="role-color-picker">
+                            <input
+                              type="color"
+                              name="color_rainbow[]"
+                              value="<%= color %>"
+                              data-role-color-input
+                            />
+                            <span class="role-color-picker-label" data-role-color-item-label>Couleur <%= colorIndex + 1 %></span>
+                            <span class="role-color-picker-value" data-role-color-hex><%= color %></span>
+                          </label>
+                          <button
+                            type="button"
+                            class="role-color-remove"
+                            data-role-color-remove
+                            aria-label="Retirer cette couleur"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      <% }) %>
+                    </div>
+                    <div class="role-color-collection-actions">
+                      <button
+                        type="button"
+                        class="btn secondary role-color-add-button"
+                        data-role-color-add="rainbow"
+                        data-icon="➕"
+                      >
+                        Ajouter une couleur
+                      </button>
+                    </div>
+                  </div>
+                  <p class="role-color-hint text-xs text-muted">
+                    Sélectionnez entre 2 et 5 couleurs pour les dégradés et arc-en-ciel. Choisissez «Couleur par défaut» pour revenir au style neutre.
+                  </p>
+                </fieldset>
+              </div>
+              <fieldset class="role-permissions">
+                <legend>Permissions</legend>
+                <% if (!permissionGroups.length) { %>
+                  <p class="text-sm text-muted">Aucune permission disponible pour le moment.</p>
+                <% } else { %>
+                  <div class="permission-manager">
+                    <aside class="permission-sidebar card" aria-label="Catégories de permissions">
+                      <div class="permission-sidebar-header">
+                        <h3 class="h4">Catégories</h3>
+                        <p class="text-sm text-muted">Sélectionnez une catégorie pour afficher ses permissions.</p>
+                      </div>
+                      <% const permissionSelectId = `permission-category-select-${role.id}`; %>
+                      <div class="permission-selector">
+                        <label for="<%= permissionSelectId %>">Catégorie affichée</label>
+                        <select id="<%= permissionSelectId %>" data-permission-selector>
+                          <% permissionGroups.forEach((category, categoryIndex) => { %>
+                            <% const groups = Array.isArray(category.groups) ? category.groups : []; %>
+                            <% const permissionCount = groups.reduce((total, group) => {
+                              const options = Array.isArray(group.permissions) ? group.permissions : [];
+                              return total + options.length;
+                            }, 0); %>
+                            <option
+                              value="<%= category.key %>"
+                              <%= categoryIndex === 0 ? 'selected' : '' %>
+                            >
+                              <%= category.label %> (<%= permissionCount %> permission<%= permissionCount > 1 ? 's' : '' %>)
+                            </option>
+                          <% }) %>
+                        </select>
+                      </div>
+                    </aside>
+                    <div class="permission-detail" data-permission-detail>
+                      <% permissionGroups.forEach((category, categoryIndex) => { %>
+                        <% const groups = Array.isArray(category.groups) ? category.groups : []; %>
+                        <section
+                          class="permission-category permission-category-panel"
+                          id="permission-panel-<%= role.id %>-<%= category.key %>"
+                          data-permission-category-panel="<%= category.key %>"
+                          <%= categoryIndex === 0 ? '' : 'hidden' %>
+                        >
+                          <div class="permission-category-header">
+                            <h3 class="permission-category-title"><%= category.label %></h3>
+                            <% if (category.description) { %>
+                              <p class="text-sm text-muted"><%= category.description %></p>
+                            <% } %>
+                          </div>
+                          <% groups.forEach((group) => { %>
+                            <% const options = Array.isArray(group.permissions) ? group.permissions : []; %>
+                            <div class="permission-group">
+                              <% if (group.label) { %>
+                                <h4 class="permission-group-title"><%= group.label %></h4>
+                              <% } %>
+                              <div class="role-permissions-grid">
+                                <% options.forEach((option) => { %>
+                                  <% if (!option || typeof option.field !== 'string') { return; } %>
+                                  <% const isLockedAdminPermission = isAdministratorRole && option.field === 'is_admin'; %>
+                                  <label class="checkbox role-permission <%= option.isAggregate ? 'is-aggregate' : '' %>">
+                                    <input
+                                      type="checkbox"
+                                      name="<%= option.field %>"
+                                      value="1"
+                                      <%= role[option.field] ? 'checked' : '' %>
+                                      <%= isLockedAdminPermission ? 'disabled' : '' %>
+                                    />
+                                    <% if (isLockedAdminPermission) { %>
+                                      <input type="hidden" name="<%= option.field %>" value="1" />
+                                    <% } %>
+                                    <span class="permission-title">
+                                      <%= option.label %>
+                                      <% if (option.isAggregate) { %>
+                                        <span class="badge badge-aggregate" aria-label="Permission globale">Macro</span>
+                                      <% } %>
+                                    </span>
+                                    <% if (option.description) { %>
+                                      <span class="permission-description"><%= option.description %></span>
+                                    <% } %>
+                                  </label>
+                                <% }) %>
+                              </div>
+                            </div>
+                          <% }) %>
+                        </section>
+                      <% }) %>
+                    </div>
+                  </div>
+                <% } %>
+              </fieldset>
+              <div class="role-actions">
+                <button class="btn secondary" type="submit" data-icon="💾">Enregistrer</button>
+              </div>
+            </form>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+
+<script>
+  (function () {
+    const manager = document.querySelector('.role-manager');
+    if (!manager) {
+      return;
+    }
+
+    const list = manager.querySelector('.role-selector');
+    const detailContainer = manager.querySelector('.role-detail');
+    let panels = Array.from(manager.querySelectorAll('.role-detail-panel'));
+    let buttons = Array.from(manager.querySelectorAll('.role-choice'));
+
+    if (!list || !detailContainer || !buttons.length || !panels.length) {
+      return;
+    }
+
+    const refreshButtons = () => {
+      buttons = Array.from(manager.querySelectorAll('.role-choice'));
+      return buttons;
+    };
+
+    const refreshPanels = () => {
+      panels = Array.from(manager.querySelectorAll('.role-detail-panel'));
+      return panels;
+    };
+
+    const setActive = (roleId) => {
+      refreshButtons().forEach((button) => {
+        const isActive = button.dataset.roleId === roleId;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+
+      refreshPanels().forEach((panel) => {
+        panel.hidden = panel.dataset.roleId !== roleId;
+      });
+    };
+
+    const attachRoleButton = (button) => {
+      if (!button) {
+        return;
+      }
+      button.addEventListener('click', () => {
+        setActive(button.dataset.roleId);
+      });
+    };
+
+    refreshButtons().forEach((button) => {
+      attachRoleButton(button);
+    });
+
+    const HEX_COLOR_PATTERN = /^#?([0-9a-fA-F]{6})$/;
+    const COLOR_CLASS_LIST = ['role-color--solid', 'role-color--gradient', 'role-color--rainbow'];
+
+    const sanitizeHex = (value) => {
+      if (typeof value !== 'string') {
+        return '';
+      }
+      const trimmed = value.trim();
+      const match = trimmed.match(HEX_COLOR_PATTERN);
+      return match ? `#${match[1].toUpperCase()}` : '';
+    };
+
+    const buildGradient = (mode, colors) => {
+      if (mode === 'gradient' && colors.length >= 2) {
+        const stopCount = colors.length - 1;
+        const stops = colors.map((color, index) => {
+          const position = stopCount > 0 ? Math.round((index / stopCount) * 100) : 0;
+          return `${color} ${position}%`;
+        });
+        return `linear-gradient(135deg, ${stops.join(', ')})`;
+      }
+      if (mode === 'rainbow' && colors.length >= 2) {
+        const step = 100 / Math.max(colors.length, 1);
+        const stops = colors.map((color, index) => `${color} ${Math.round(index * step)}%`);
+        stops.push(`${colors[0]} 100%`);
+        return `linear-gradient(120deg, ${stops.join(', ')})`;
+      }
+      return null;
+    };
+
+    const buildPresentation = (scheme) => {
+      if (!scheme || !scheme.mode || !Array.isArray(scheme.colors)) {
+        return {
+          mode: null,
+          colors: [],
+          className: '',
+          style: '',
+          label: 'Couleur par défaut',
+          hasColor: false,
+        };
+      }
+      const { mode } = scheme;
+      const colors = scheme.colors.slice();
+      const fallback = colors[0] || null;
+      const gradient = buildGradient(mode, colors);
+      const styleParts = [];
+      colors.forEach((color, index) => {
+        styleParts.push(`--role-color-${index + 1}: ${color}`);
+      });
+      if (fallback) {
+        styleParts.push(`--role-fallback-color: ${fallback}`);
+      }
+      if (gradient) {
+        styleParts.push(`--role-gradient: ${gradient}`);
+      }
+      styleParts.push('--role-background-position: 0% 50%');
+      if (mode === 'gradient') {
+        styleParts.push('--role-background-size: 200% 200%');
+        styleParts.push('--role-animation: none');
+      } else if (mode === 'rainbow') {
+        styleParts.push('--role-background-size: 400% 100%');
+        styleParts.push('--role-animation: role-rainbow 8s linear infinite');
+      } else {
+        styleParts.push('--role-background-size: 100% 100%');
+        styleParts.push('--role-animation: none');
+      }
+      let label = '';
+      if (mode === 'solid') {
+        label = fallback || '';
+      } else if (mode === 'gradient' && colors.length >= 2) {
+        label = `Dégradé ${colors.join(' → ')}`;
+      } else if (mode === 'rainbow' && colors.length >= 2) {
+        label = `Arc-en-ciel ${colors.join(' → ')}`;
+      }
+      return {
+        mode,
+        colors,
+        className: `role-color--${mode}`,
+        style: styleParts.join('; '),
+        label,
+        hasColor: true,
+      };
+    };
+
+    const collectSchemeFromForm = (form) => {
+      if (!form) {
+        return null;
+      }
+      const editor = form.querySelector('[data-role-color-editor]');
+      if (!editor) {
+        return null;
+      }
+      const modeSelect = editor.querySelector('[data-role-color-mode]');
+      const mode = (modeSelect?.value || '').trim().toLowerCase();
+      if (!mode || mode === 'default') {
+        return null;
+      }
+      const getCollectionColors = (collection) => {
+        if (!collection) {
+          return [];
+        }
+        const inputs = Array.from(
+          collection.querySelectorAll('[data-role-color-input]'),
+        );
+        const colors = [];
+        for (const input of inputs) {
+          const value = sanitizeHex(input?.value || '');
+          if (!value) {
+            return [];
+          }
+          colors.push(value);
+        }
+        return colors;
+      };
+
+      if (mode === 'solid') {
+        const solidInput = editor.querySelector('input[name="color_solid"]');
+        const color = sanitizeHex(solidInput?.value || '');
+        return color ? { mode: 'solid', colors: [color] } : null;
+      }
+      if (mode === 'gradient' || mode === 'rainbow') {
+        const collection = editor.querySelector(
+          `[data-role-color-collection="${mode}"]`,
+        );
+        if (!collection) {
+          return null;
+        }
+        const min = Number.parseInt(collection.dataset.roleColorMin || '2', 10) || 2;
+        const max = Number.parseInt(collection.dataset.roleColorMax || '5', 10) || 5;
+        const colors = getCollectionColors(collection);
+        if (colors.length < min) {
+          return null;
+        }
+        return { mode, colors: colors.slice(0, max) };
+      }
+      return null;
+    };
+
+    const applyPresentationToPreview = (preview, presentation) => {
+      if (!preview) {
+        return;
+      }
+      const chip = preview.querySelector('[data-role-color-chip]');
+      const label = preview.querySelector('[data-role-color-label]');
+      preview.classList.toggle('is-empty', !presentation.hasColor);
+      if (chip) {
+        COLOR_CLASS_LIST.forEach((className) => chip.classList.remove(className));
+        if (presentation.hasColor && presentation.className) {
+          chip.classList.add(presentation.className);
+        }
+        chip.setAttribute('style', presentation.hasColor ? presentation.style : '');
+      }
+      if (label) {
+        label.textContent = presentation.hasColor ? presentation.label : 'Couleur par défaut';
+      }
+    };
+
+    const initColorEditor = (panel) => {
+      const form = panel.querySelector('.role-permissions-column');
+      if (!form) {
+        return;
+      }
+      const editor = form.querySelector('[data-role-color-editor]');
+      if (!editor) {
+        return;
+      }
+      const modeSelect = editor.querySelector('[data-role-color-mode]');
+      const fieldGroups = Array.from(editor.querySelectorAll('[data-role-color-fields]'));
+      const previews = Array.from(panel.querySelectorAll('[data-role-color-preview]'));
+
+      const getCollections = () =>
+        Array.from(editor.querySelectorAll('[data-role-color-collection]'));
+
+      const updateVisibility = () => {
+        const activeMode = (modeSelect?.value || '').trim().toLowerCase();
+        fieldGroups.forEach((group) => {
+          const groupMode = (group.dataset.roleColorFields || '').toLowerCase();
+          group.hidden = groupMode !== activeMode;
+        });
+      };
+
+      const updatePreview = () => {
+        const scheme = collectSchemeFromForm(form);
+        const presentation = buildPresentation(scheme);
+        previews.forEach((preview) => applyPresentationToPreview(preview, presentation));
+      };
+
+      const updateHexLabel = (input) => {
+        const wrapper = input.closest('[data-role-color-item]');
+        if (!wrapper) {
+          return;
+        }
+        const display = wrapper.querySelector('[data-role-color-hex]');
+        if (!display) {
+          return;
+        }
+        const sanitized = sanitizeHex(input.value || '');
+        if (sanitized) {
+          display.textContent = sanitized;
+        }
+      };
+
+      const getBound = (collection, key, fallback) => {
+        if (!collection) {
+          return fallback;
+        }
+        const raw = collection.dataset[key];
+        const parsed = Number.parseInt(raw || '', 10);
+        return Number.isNaN(parsed) ? fallback : parsed;
+      };
+
+      const addColorItem = (collection, value) => {
+        const sanitized = sanitizeHex(value || '') || '#4F46E5';
+        const item = document.createElement('div');
+        item.className = 'role-color-item';
+        item.dataset.roleColorItem = '';
+
+        const picker = document.createElement('label');
+        picker.className = 'role-color-picker';
+
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = sanitized;
+        input.dataset.roleColorInput = '';
+        picker.appendChild(input);
+
+        const label = document.createElement('span');
+        label.className = 'role-color-picker-label';
+        label.dataset.roleColorItemLabel = '';
+        picker.appendChild(label);
+
+        const valueDisplay = document.createElement('span');
+        valueDisplay.className = 'role-color-picker-value';
+        valueDisplay.dataset.roleColorHex = '';
+        valueDisplay.textContent = sanitized;
+        picker.appendChild(valueDisplay);
+
+        item.appendChild(picker);
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'role-color-remove';
+        remove.dataset.roleColorRemove = '';
+        remove.setAttribute('aria-label', 'Retirer cette couleur');
+        remove.innerHTML = '&times;';
+        item.appendChild(remove);
+
+        collection.appendChild(item);
+        return item;
+      };
+
+      const ensureMinimumColors = (collection) => {
+        if (!collection) {
+          return;
+        }
+        const min = getBound(collection, 'roleColorMin', 0);
+        const items = Array.from(collection.querySelectorAll('[data-role-color-item]'));
+        if (items.length >= min) {
+          return;
+        }
+        const lastInput =
+          items[items.length - 1]?.querySelector('[data-role-color-input]');
+        const fallback = lastInput?.value || '#4F46E5';
+        for (let index = items.length; index < min; index += 1) {
+          addColorItem(collection, fallback);
+        }
+      };
+
+      const updateCollectionState = (collection) => {
+        if (!collection) {
+          return;
+        }
+        const items = Array.from(collection.querySelectorAll('[data-role-color-item]'));
+        const min = getBound(collection, 'roleColorMin', 0);
+        items.forEach((item, index) => {
+          const label = item.querySelector('[data-role-color-item-label]');
+          if (label) {
+            label.textContent = `Couleur ${index + 1}`;
+          }
+          const removeButton = item.querySelector('[data-role-color-remove]');
+          if (removeButton) {
+            const disabled = items.length <= min;
+            removeButton.disabled = disabled;
+            removeButton.classList.toggle('is-disabled', disabled);
+          }
+          const input = item.querySelector('[data-role-color-input]');
+          if (input) {
+            updateHexLabel(input);
+          }
+        });
+      };
+
+      const updateAddButtons = () => {
+        getCollections().forEach((collection) => {
+          const mode = collection.dataset.roleColorCollection;
+          if (!mode) {
+            return;
+          }
+          const addButton = editor.querySelector(
+            `[data-role-color-add="${mode}"]`,
+          );
+          if (!addButton) {
+            return;
+          }
+          const max = getBound(collection, 'roleColorMax', Infinity);
+          const count = collection.querySelectorAll('[data-role-color-item]').length;
+          const disabled = count >= max;
+          addButton.disabled = disabled;
+          addButton.classList.toggle('is-disabled', disabled);
+        });
+      };
+
+      const refreshCollections = () => {
+        getCollections().forEach((collection) => {
+          ensureMinimumColors(collection);
+          updateCollectionState(collection);
+        });
+        updateAddButtons();
+      };
+
+      if (modeSelect) {
+        modeSelect.addEventListener('change', () => {
+          updateVisibility();
+          updatePreview();
+        });
+      }
+
+      editor.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+          return;
+        }
+        if (!target.matches('[data-role-color-input]')) {
+          return;
+        }
+        updateHexLabel(target);
+        updatePreview();
+      });
+
+      editor.addEventListener(
+        'blur',
+        (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLInputElement)) {
+            return;
+          }
+          if (!target.matches('[data-role-color-input]')) {
+            return;
+          }
+          const sanitized = sanitizeHex(target.value || '');
+          if (sanitized) {
+            target.value = sanitized;
+          }
+          updateHexLabel(target);
+        },
+        true,
+      );
+
+      editor.addEventListener('click', (event) => {
+        const addButton = event.target.closest('[data-role-color-add]');
+        if (addButton instanceof HTMLButtonElement) {
+          const mode = addButton.dataset.roleColorAdd;
+          const collection = editor.querySelector(
+            `[data-role-color-collection="${mode}"]`,
+          );
+          if (collection) {
+            const items = Array.from(
+              collection.querySelectorAll('[data-role-color-item]'),
+            );
+            const lastInput =
+              items[items.length - 1]?.querySelector('[data-role-color-input]');
+            addColorItem(collection, lastInput?.value || '#4F46E5');
+            refreshCollections();
+            updatePreview();
+          }
+          return;
+        }
+        const removeButton = event.target.closest('[data-role-color-remove]');
+        if (removeButton instanceof HTMLButtonElement) {
+          const item = removeButton.closest('[data-role-color-item]');
+          const collection = item?.closest('[data-role-color-collection]');
+          if (item && collection) {
+            const min = getBound(collection, 'roleColorMin', 0);
+            const items = collection.querySelectorAll('[data-role-color-item]');
+            if (items.length > min) {
+              item.remove();
+              refreshCollections();
+              updatePreview();
+            }
+          }
+        }
+      });
+
+      refreshCollections();
+      updateVisibility();
+      updatePreview();
+    };
+
+    panels.forEach(initColorEditor);
+
+    const initPermissionManager = (panel) => {
+      if (!panel) {
+        return;
+      }
+      const selector = panel.querySelector('[data-permission-selector]');
+      const detail = panel.querySelector('[data-permission-detail]');
+      if (!(selector instanceof HTMLSelectElement) || !detail) {
+        return;
+      }
+
+      const categoryPanels = Array.from(
+        detail.querySelectorAll('[data-permission-category-panel]'),
+      );
+
+      if (!categoryPanels.length) {
+        return;
+      }
+
+      const activate = (categoryKey) => {
+        let key = categoryKey;
+        const hasMatchingPanel = categoryPanels.some(
+          (section) => section.dataset.permissionCategoryPanel === key,
+        );
+        if (!key || !hasMatchingPanel) {
+          key = categoryPanels[0].dataset.permissionCategoryPanel || '';
+        }
+
+        categoryPanels.forEach((section) => {
+          section.hidden = section.dataset.permissionCategoryPanel !== key;
+        });
+
+        if (selector.value !== key) {
+          const matchingOption = Array.from(selector.options).find(
+            (option) => option.value === key,
+          );
+          if (matchingOption) {
+            selector.value = matchingOption.value;
+          }
+        }
+      };
+
+      selector.addEventListener('change', (event) => {
+        activate(event.target.value);
+      });
+
+      const initiallyActive = selector.value
+        || categoryPanels[0].dataset.permissionCategoryPanel
+        || '';
+
+      activate(initiallyActive);
+    };
+
+    panels.forEach(initPermissionManager);
+
+    const applyHeaders = (headers = {}) =>
+      typeof applyCsrfHeader === 'function' ? applyCsrfHeader(headers) : headers;
+
+    const createRoleButton = manager.querySelector('[data-action="create-role"]');
+
+    const requestCreateRole = async ({ name, description, color }) => {
+      const response = await fetch('/admin/roles', {
+        method: 'POST',
+        headers: applyHeaders({
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        }),
+        credentials: 'same-origin',
+        body: JSON.stringify({ name, description, color }),
+      });
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (_err) {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success) {
+        const message =
+          payload?.message || 'Impossible de créer le rôle. Merci de réessayer.';
+        throw new Error(message);
+      }
+      return payload;
+    };
+
+    if (createRoleButton) {
+      createRoleButton.addEventListener('click', async () => {
+        const existingNames = new Set(
+          refreshButtons().map(
+            (button) =>
+              button.querySelector('.role-choice-name')?.textContent?.trim() || '',
+          ),
+        );
+        const baseName = 'Nouveau rôle';
+        let suggested = baseName;
+        if (existingNames.has(baseName)) {
+          let index = 2;
+          while (existingNames.has(`${baseName} ${index}`)) {
+            index += 1;
+          }
+          suggested = `${baseName} ${index}`;
+        }
+        let name = window.prompt('Nom du nouveau rôle', suggested);
+        if (!name) {
+          return;
+        }
+        name = name.trim();
+        if (!name) {
+          return;
+        }
+        const description = window.prompt('Description du rôle (facultatif)', '') || '';
+        const color = (window.prompt('Couleur hex du pseudo (facultatif)', '') || '').trim();
+        createRoleButton.disabled = true;
+        const originalIcon = createRoleButton.dataset.icon;
+        createRoleButton.dataset.icon = '…';
+        try {
+          const result = await requestCreateRole({
+            name,
+            description: description.trim(),
+            color,
+          });
+          if (result?.success && result?.role?.id) {
+            window.location.href = `/admin/roles#role-${result.role.id}`;
+          } else {
+            throw new Error(result?.message || 'Impossible de créer le rôle.');
+          }
+        } catch (error) {
+          console.error('Impossible de créer le rôle', error);
+          window.alert(
+            error?.message || 'Impossible de créer le rôle. Merci de réessayer.',
+          );
+        } finally {
+          createRoleButton.disabled = false;
+          if (originalIcon !== undefined) {
+            createRoleButton.dataset.icon = originalIcon;
+          } else {
+            delete createRoleButton.dataset.icon;
+          }
+        }
+      });
+    }
+
+    const hash = window.location.hash || '';
+    if (hash.startsWith('#role-')) {
+      const roleId = hash.replace('#role-', '');
+      if (roleId && list.querySelector(`[data-role-id="${roleId}"]`)) {
+        setActive(roleId);
+        const target = document.getElementById(`role-${roleId}`);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+
+    const saveOrderButton = manager.querySelector('[data-action="save-role-order"]');
+    const orderStatus = manager.querySelector('[data-role-order-status]');
+    const defaultOrderStatusMessage = orderStatus
+      ? orderStatus.textContent.trim() || "Ordre modifié. Enregistrez pour appliquer."
+      : "Ordre modifié. Enregistrez pour appliquer.";
+
+    if (orderStatus) {
+      orderStatus.textContent = defaultOrderStatusMessage;
+      orderStatus.hidden = true;
+    }
+
+    const getOrder = () =>
+      Array.from(list.querySelectorAll('.role-selector-item'))
+        .map((item) => item.dataset.roleId)
+        .filter(Boolean);
+
+    let lastOrder = getOrder().join(',');
+    let pendingOrder = null;
+    let draggedItem = null;
+    let isSavingOrder = false;
+    let statusTimeoutId = null;
+
+    const clearStatus = () => {
+      if (!orderStatus) {
+        return;
+      }
+      if (statusTimeoutId) {
+        window.clearTimeout(statusTimeoutId);
+        statusTimeoutId = null;
+      }
+      orderStatus.hidden = true;
+      orderStatus.classList.remove('is-pending', 'is-success', 'is-error');
+      orderStatus.textContent = defaultOrderStatusMessage;
+    };
+
+    const setStatus = (message, state) => {
+      if (!orderStatus) {
+        return;
+      }
+      if (statusTimeoutId) {
+        window.clearTimeout(statusTimeoutId);
+        statusTimeoutId = null;
+      }
+      orderStatus.textContent = message;
+      orderStatus.hidden = false;
+      orderStatus.classList.remove('is-pending', 'is-success', 'is-error');
+      if (state) {
+        orderStatus.classList.add(state);
+      }
+      if (state === 'is-success') {
+        statusTimeoutId = window.setTimeout(() => {
+          orderStatus.hidden = true;
+          orderStatus.classList.remove('is-success');
+          orderStatus.textContent = defaultOrderStatusMessage;
+          statusTimeoutId = null;
+        }, 4000);
+      }
+    };
+
+    const markDirty = (order) => {
+      pendingOrder = order.slice();
+      if (saveOrderButton) {
+        saveOrderButton.disabled = false;
+      }
+      setStatus(defaultOrderStatusMessage, 'is-pending');
+    };
+
+    const markPristine = () => {
+      pendingOrder = null;
+      if (saveOrderButton) {
+        saveOrderButton.disabled = true;
+      }
+      clearStatus();
+    };
+
+    const getDragAfterElement = (container, y) => {
+      const items = Array.from(
+        container.querySelectorAll('.role-selector-item:not(.is-dragging)'),
+      );
+      return items.reduce(
+        (closest, item) => {
+          const box = item.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > closest.offset) {
+            return { offset, element: item };
+          }
+          return closest;
+        },
+        { offset: Number.NEGATIVE_INFINITY, element: null },
+      ).element;
+    };
+
+    const persistOrder = async (order) => {
+      if (!order.length) {
+        throw new Error("Aucun ordre de rôles à sauvegarder.");
+      }
+      const response = await fetch('/admin/roles/reorder', {
+        method: 'POST',
+        headers: applyHeaders({
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        }),
+        credentials: 'same-origin',
+        body: JSON.stringify({ order }),
+      });
+
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (_err) {
+        payload = null;
+      }
+
+      if (!response.ok || !payload?.success) {
+        const message =
+          payload?.message || "Impossible de sauvegarder le nouvel ordre des rôles.";
+        throw new Error(message);
+      }
+
+      return payload;
+    };
+
+    const finishDrag = () => {
+      if (!draggedItem) {
+        return;
+      }
+      draggedItem.classList.remove('is-dragging');
+      const order = getOrder();
+      const serialized = order.join(',');
+      if (serialized !== lastOrder) {
+        markDirty(order);
+      } else {
+        markPristine();
+      }
+      draggedItem = null;
+    };
+
+    if (saveOrderButton) {
+      saveOrderButton.addEventListener('click', async () => {
+        if (isSavingOrder) {
+          return;
+        }
+
+        const pending = Array.isArray(pendingOrder) ? pendingOrder : getOrder();
+        if (!pending || !pending.length || pending.join(',') === lastOrder) {
+          markPristine();
+          return;
+        }
+
+        const originalIcon = saveOrderButton.dataset.icon;
+        saveOrderButton.disabled = true;
+        saveOrderButton.dataset.icon = '…';
+        isSavingOrder = true;
+        setStatus('Enregistrement en cours…', 'is-pending');
+
+        try {
+          const result = await persistOrder(pending);
+          const resultingOrder = Array.isArray(result?.order) && result.order.length
+            ? result.order.map((value) => String(value))
+            : pending;
+          lastOrder = resultingOrder.join(',');
+          pendingOrder = null;
+          saveOrderButton.disabled = true;
+          setStatus('Ordre enregistré.', 'is-success');
+        } catch (error) {
+          console.error("Impossible de sauvegarder l'ordre des rôles", error);
+          const message =
+            error?.message || "Impossible d'enregistrer l'ordre. Merci de réessayer.";
+          setStatus(message, 'is-error');
+          saveOrderButton.disabled = false;
+        } finally {
+          if (originalIcon !== undefined) {
+            saveOrderButton.dataset.icon = originalIcon;
+          } else {
+            delete saveOrderButton.dataset.icon;
+          }
+          isSavingOrder = false;
+        }
+      });
+    }
+
+    list.addEventListener('dragstart', (event) => {
+      const item = event.target.closest('.role-selector-item');
+      if (!item) {
+        return;
+      }
+      draggedItem = item;
+      item.classList.add('is-dragging');
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', item.dataset.roleId || '');
+      }
+    });
+
+    list.addEventListener('dragover', (event) => {
+      if (!draggedItem) {
+        return;
+      }
+      event.preventDefault();
+      const afterElement = getDragAfterElement(list, event.clientY);
+      if (!afterElement) {
+        list.appendChild(draggedItem);
+        return;
+      }
+      if (afterElement !== draggedItem) {
+        list.insertBefore(draggedItem, afterElement);
+      }
+    });
+
+    list.addEventListener('drop', (event) => {
+      event.preventDefault();
+      finishDrag();
+    });
+
+    list.addEventListener('dragend', () => {
+      finishDrag();
+    });
+  })();
+</script>
+

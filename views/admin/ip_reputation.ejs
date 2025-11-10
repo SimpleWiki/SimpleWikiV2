@@ -1,0 +1,281 @@
+<% title = t('admin.ipReputation.title'); %>
+<%
+  const reviewPager = reviewPagination || null;
+  const suspiciousTotal = reviewPager ? reviewPager.totalItems : suspicious.length;
+  const clearedPager = clearedPagination || null;
+  const clearedTotal = clearedPager ? clearedPager.totalItems : cleared.length;
+  const historyEntries = Array.isArray(history) ? history : [];
+  const historyPager = historyPagination || null;
+  const historyTotal = historyPager ? historyPager.totalItems : historyEntries.length;
+  function formatReputationStatusLabel(status) {
+    if (status === 'suspicious') return t('admin.ipReputation.status.suspicious');
+    if (status === 'safe') return t('admin.ipReputation.status.safe');
+    if (status === 'clean') return t('admin.ipReputation.status.clean');
+    return t('admin.ipReputation.status.unknown');
+  }
+  function getReputationStatusClass(status) {
+    if (status === 'suspicious') return 'status-pill suspicious';
+    if (status === 'safe') return 'status-pill safe';
+    if (status === 'clean') return 'status-pill clean';
+    return 'status-pill pending';
+  }
+%>
+<h1><%= t('admin.ipReputation.heading') %></h1>
+
+<p class="text-muted leading-snug">
+  <%= t('admin.ipReputation.intro.before') %>
+  <a href="https://ipapi.is" target="_blank" rel="noopener"><%= providerName %></a>
+  <%= t('admin.ipReputation.intro.detect') %>
+  <%= t('admin.ipReputation.intro.afterPrefix') %>
+  <strong><%= fmt.number(refreshIntervalHours) %>h</strong>
+  <%= t('admin.ipReputation.intro.afterSuffix') %>
+</p>
+
+<section class="card mb-xl">
+  <h2 class="mt-0"><%= t('admin.ipReputation.manual.title') %></h2>
+  <form method="post" action="/admin/ip-reputation/manual-check" class="flex flex-wrap gap-sm items-end">
+    <%- include('../partials/csrf_field') %>
+    <label class="stack-form flex-basis-260">
+      <span class="text-sm text-muted"><%= t('admin.ipReputation.fields.ip') %></span>
+      <input
+        type="text"
+        name="ip"
+        placeholder="<%= t('admin.ipReputation.placeholders.ip') %>"
+        required
+      />
+    </label>
+    <button type="submit" class="btn success"><%= t('admin.ipReputation.actions.analyze') %></button>
+  </form>
+  <p class="help-text mt-sm"><%= t('admin.ipReputation.manual.help') %></p>
+</section>
+
+<% if (suspiciousTotal) { %>
+  <div class="alert alert-error mb-md">
+    <%- t('admin.ipReputation.alerts.pendingModeration', { count: fmt.number(suspiciousTotal) }) %>
+  </div>
+<% } else { %>
+  <div class="alert alert-success mb-md">
+    <%= t('admin.ipReputation.alerts.noneNew') %>
+  </div>
+<% } %>
+
+<section class="card card-highlight mb-xl">
+  <h2 class="mt-0"><%= t('admin.ipReputation.summary.title') %></h2>
+  <div class="grid grid-auto">
+    <div>
+      <p class="stat-sub"><%= t('admin.ipReputation.summary.toReview') %></p>
+      <p class="stat-number"><%= fmt.number(suspiciousTotal) %></p>
+    </div>
+    <div>
+      <p class="stat-sub"><%= t('admin.ipReputation.summary.provider') %></p>
+      <p class="stat-number"><%= providerName %></p>
+    </div>
+    <div>
+      <p class="stat-sub"><%= t('admin.ipReputation.summary.autoFrequency') %></p>
+      <p class="stat-number"><%= fmt.number(refreshIntervalHours) %>h</p>
+    </div>
+  </div>
+</section>
+
+<section class="card mb-xl">
+  <h2 class="mt-0"><%- t('admin.ipReputation.review.title', { count: fmt.number(suspiciousTotal) }) %></h2>
+  <% if (!suspiciousTotal) { %>
+    <p class="text-muted"><%= t('admin.ipReputation.review.empty') %></p>
+  <% } else { %>
+    <ul class="admin-risk-list">
+      <% suspicious.forEach((profile) => { %>
+        <li class="admin-risk-item">
+          <header class="admin-risk-header">
+            <div>
+              <code class="admin-risk-ip"><%= profile.ip %></code>
+              <span class="status-pill suspicious"><%= t('admin.ipReputation.status.suspicious') %></span>
+              <span class="text-muted">
+                <%= t('admin.ipReputation.profileN', { n: profile.shortHash }) %>
+                <% if (profile.id) { %>
+                  — ID: <code><%= profile.id %></code>
+                <% } %>
+              </span>
+              <% if (profile.bot?.isBot) { %>
+                <span class="status-pill suspicious"><%= t('admin.ipReputation.flags.bot') %></span>
+              <% } %>
+            </div>
+            <div class="admin-risk-links">
+              <a class="btn secondary" href="/profiles/ip/<%= profile.hash %>" target="_blank" rel="noopener"><%= t('admin.ipReputation.links.publicProfile') %></a>
+              <a class="btn secondary" href="/admin/ip-profiles?search=<%= profile.hash %>"><%= t('admin.ipReputation.links.viewInList') %></a>
+            </div>
+          </header>
+          <p class="admin-risk-summary"><%= profile.summary || t('admin.ipReputation.defaultSummary') %></p>
+          <% if (profile.bot?.reason) { %>
+            <p class="text-muted text-sm"><%= t('admin.ipReputation.bot.detected') %> <%= profile.bot.reason %></p>
+          <% } %>
+          <% if (profile.bot?.userAgent) { %>
+            <p class="text-muted text-sm"><small><%= t('admin.ipReputation.bot.agent') %> <%= profile.bot.userAgent %></small></p>
+          <% } %>
+          <div class="admin-risk-flags">
+            <% if (profile.flags.isVpn) { %><span class="tag tag-danger"><%= t('admin.ipReputation.flags.vpn') %></span><% } %>
+            <% if (profile.flags.isProxy) { %><span class="tag tag-warning"><%= t('admin.ipReputation.flags.proxy') %></span><% } %>
+            <% if (profile.flags.isTor) { %><span class="tag tag-warning"><%= t('admin.ipReputation.flags.tor') %></span><% } %>
+            <% if (profile.flags.isDatacenter) { %><span class="tag tag-info"><%= t('admin.ipReputation.flags.datacenter') %></span><% } %>
+            <% if (profile.flags.isAbuser) { %><span class="tag tag-danger"><%= t('admin.ipReputation.flags.abuser') %></span><% } %>
+            <% if (profile.bot?.isBot) { %><span class="tag tag-danger"><%= t('admin.ipReputation.flags.bot') %></span><% } %>
+          </div>
+          <div class="admin-risk-meta text-muted">
+            <% if (profile.checkedAt) { %>
+              <%= t('admin.ipReputation.meta.lastCheck') %> <%= fmt.dateTime(profile.checkedAt) %>
+            <% } else { %>
+              <%= t('admin.ipReputation.meta.lastCheck') %> <%= t('common.unknown') %>
+            <% } %>
+            <% if (profile.lastSeenAt) { %>
+              — <%= t('admin.ipReputation.meta.lastActivity') %> <%= fmt.dateTime(profile.lastSeenAt) %>
+            <% } %>
+          </div>
+          <div class="admin-risk-actions">
+            <form method="post" action="/admin/ip-reputation/<%= profile.hash %>/ban" onsubmit="return confirm(t('admin.ipReputation.actions.banConfirm'))">
+              <%- include('../partials/csrf_field') %>
+              <button type="submit" class="btn danger"><%= t('admin.ipReputation.actions.ban') %></button>
+            </form>
+            <form method="post" action="/admin/ip-reputation/<%= profile.hash %>/mark-safe">
+              <%- include('../partials/csrf_field') %>
+              <button type="submit" class="btn success"><%= t('admin.ipReputation.actions.markSafe') %></button>
+            </form>
+            <form method="post" action="/admin/ip-reputation/<%= profile.hash %>/recheck">
+              <%- include('../partials/csrf_field') %>
+              <button type="submit" class="btn secondary"><%= t('admin.ipReputation.actions.recheck') %></button>
+            </form>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+    <%- include('./paginationControls', { pagination: reviewPager }) %>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2 class="mt-0"><%= t('admin.ipReputation.cleared.title') %></h2>
+  <% if (!clearedTotal) { %>
+    <p class="text-muted"><%= t('admin.ipReputation.cleared.empty') %></p>
+  <% } else { %>
+    <ul class="admin-cleared-list">
+      <% cleared.forEach((profile) => { %>
+        <li>
+          <div class="admin-cleared-header">
+            <code><%= profile.ip %></code>
+            <span class="status-pill safe"><%= t('admin.ipReputation.status.safe') %></span>
+            <span class="text-muted">
+              <%= t('admin.ipReputation.profileN', { n: profile.shortHash }) %>
+              <% if (profile.id) { %>
+                — ID: <code><%= profile.id %></code>
+              <% } %>
+            </span>
+            <% if (profile.bot?.isBot) { %>
+              <span class="status-pill suspicious"><%= t('admin.ipReputation.flags.bot') %></span>
+            <% } %>
+          </div>
+          <% if (profile.summary) { %>
+            <p class="text-muted"><%= profile.summary %></p>
+          <% } %>
+          <% if (profile.bot?.reason) { %>
+            <p class="text-muted text-sm"><%= t('admin.ipReputation.bot.detected') %> <%= profile.bot.reason %></p>
+          <% } %>
+          <% if (profile.bot?.userAgent) { %>
+            <p class="text-muted text-sm"><small><%= t('admin.ipReputation.bot.agent') %> <%= profile.bot.userAgent %></small></p>
+          <% } %>
+          <div class="admin-cleared-actions">
+            <form
+              method="post"
+              action="/admin/ip-reputation/<%= profile.hash %>/clear-safe"
+              onsubmit="return confirm(t('admin.ipReputation.cleared.removeConfirm'))"
+            >
+              <%- include('../partials/csrf_field') %>
+              <button type="submit" class="btn danger"><%= t('admin.ipReputation.actions.remove') %></button>
+            </form>
+          </div>
+          <p class="admin-cleared-meta text-muted">
+            <% if (profile.checkedAt) { %>
+              <%= t('admin.ipReputation.meta.verifiedOn') %> <%= fmt.dateTime(profile.checkedAt) %>
+            <% } else if (profile.lastSeenAt) { %>
+              <%= t('admin.ipReputation.meta.lastActivity') %> <%= fmt.dateTime(profile.lastSeenAt) %>
+            <% } %>
+          </p>
+        </li>
+      <% }) %>
+    </ul>
+    <%- include('./paginationControls', { pagination: clearedPager }) %>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2 class="mt-0"><%= t('admin.ipReputation.history.title') %></h2>
+  <% if (!historyTotal) { %>
+    <p class="text-muted"><%= t('admin.ipReputation.history.empty') %></p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th><%= t('admin.ipReputation.history.table.ip') %></th>
+            <th><%= t('admin.ipReputation.history.table.status') %></th>
+            <th><%= t('admin.ipReputation.history.table.summary') %></th>
+            <th><%= t('admin.ipReputation.history.table.lastCheck') %></th>
+            <th><%= t('admin.ipReputation.history.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% historyEntries.forEach((entry) => { %>
+            <tr>
+              <td>
+                <code><%= entry.ip %></code>
+                <br />
+                <small class="text-muted">
+                  <%= t('admin.ipReputation.profileN', { n: entry.shortHash }) %>
+                  <% if (entry.id) { %>
+                    <br />ID: <code><%= entry.id %></code>
+                  <% } %>
+                </small>
+              </td>
+              <td>
+                <span class="<%= getReputationStatusClass(entry.status) %>">
+                  <%= formatReputationStatusLabel(entry.status) %>
+                </span>
+                <% if (entry.override) { %>
+                  <br />
+                  <small class="text-muted"><%= t('admin.ipReputation.history.override') %> <%= entry.override %></small>
+                <% } %>
+              </td>
+              <td>
+                <%= entry.summary || t('admin.ipReputation.history.noSignals') %>
+                <% if (entry.bot?.isBot) { %>
+                  <br />
+                  <small class="text-muted"><%= t('admin.ipReputation.bot.detected') %> <%= entry.bot.reason || t('admin.ipReputation.bot.automaticReasons') %></small>
+                <% } %>
+                <% if (entry.bot?.userAgent) { %>
+                  <br />
+                  <small class="text-muted"><%= entry.bot.userAgent %></small>
+                <% } %>
+              </td>
+              <td>
+                <% if (entry.checkedAt) { %>
+                  <time datetime="<%= entry.checkedAt %>"><%= fmt.dateTime(entry.checkedAt) %></time>
+                <% } else { %>
+                  <span class="text-muted"><%= t('common.never') %></span>
+                <% } %>
+              </td>
+              <td>
+                <a
+                  class="btn secondary btn-compact"
+                  href="/profiles/ip/<%= entry.hash %>"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <%= t('admin.ipReputation.history.viewProfile') %>
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination: historyPager }) %>
+  <% } %>
+</section>
+

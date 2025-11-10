@@ -1,0 +1,79 @@
+<% title = 'Événements'; %>
+<h1>Journal des événements</h1>
+
+<form method="get" class="card mb-md">
+  <div class="flex flex-wrap gap-sm items-end">
+    <label class="stack-form">
+      <span class="text-sm text-muted">Rechercher</span>
+      <input
+        type="text"
+        name="search"
+        value="<%= typeof searchTerm === 'string' ? searchTerm : '' %>"
+        placeholder="ID, canal, utilisateur…"
+        class="flex-basis-260"
+      />
+    </label>
+    <input type="hidden" name="page" value="1" />
+    <input type="hidden" name="perPage" value="<%= pagination.perPage %>" />
+    <button class="btn" data-icon="🔍" type="submit">Rechercher</button>
+    <% if (searchTerm) { %>
+      <a class="btn secondary" href="/admin/events">Réinitialiser</a>
+    <% } %>
+  </div>
+</form>
+
+<section class="card">
+  <h2>Derniers événements</h2>
+  <% if (!events.length) { %>
+    <p>Aucun événement enregistré.</p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Canal</th>
+            <th>Utilisateur</th>
+            <th>IP</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% events.forEach(ev => { %>
+            <tr>
+              <td><code><%= ev.snowflake_id || ev.id %></code></td>
+              <td><strong><%= ev.type %></strong></td>
+              <td><code><%= ev.channel %></code></td>
+              <% const eventUserColor = ev.userRole && ev.userRole.color ? ev.userRole.color : null; %>
+              <% const eventUserClasses = ['user-handle', 'event-user']; %>
+              <% const eventUserStyle = eventUserColor && eventUserColor.hasColor ? eventUserColor.style : ''; %>
+              <% if (eventUserColor && eventUserColor.hasColor) { eventUserClasses.push('role-colored-text'); eventUserClasses.push(eventUserColor.className); } %>
+              <% const eventUserBadges = Array.isArray(ev?.userRole?.badges) ? ev.userRole.badges : []; %>
+              <td>
+                <% if (ev.username) { %>
+                  <span class="user-handle-decorated">
+                    <strong class="<%= eventUserClasses.join(' ') %>" style="<%= eventUserStyle %>"><%= ev.username %></strong>
+                    <%- include('../partials/userBadges', {
+                      badges: eventUserBadges,
+                      listClass: ['user-handle-badges', 'user-handle-badges--inline'],
+                      itemClass: 'user-handle-badge-item',
+                      iconClass: 'user-handle-badge-icon',
+                      srOnlyClass: 'sr-only',
+                      ariaLabel: "Badges de l'utilisateur",
+                    }) %>
+                  </span>
+                <% } else { %>
+                  -
+                <% } %>
+              </td>
+              <td><%= ev.ip || '-' %></td>
+              <td><%= new Date(ev.created_at).toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR') %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination }) %>
+  <% } %>
+</section>

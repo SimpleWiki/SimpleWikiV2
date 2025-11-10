@@ -1,0 +1,78 @@
+<% title = t('history.title', { page: page.title }); %>
+<% const permissionFlags =
+  typeof permissions !== 'undefined' && permissions && typeof permissions === 'object'
+    ? permissions
+    : {}; %>
+<% const canRevertHistory = !!permissionFlags.can_revert_page_history; %>
+<div class="card">
+  <h1><%= t('history.heading', { page: page.title }) %></h1>
+  <p><%= t('history.slug') %> <code><%= page.slug_id %></code></p>
+  <p><%= t('history.total', { count: total, s: total > 1 ? 's' : '' }) %></p>
+</div>
+
+<div class="card">
+  <% if (!revisions.length) { %>
+    <p>Aucune révision enregistrée pour cette page.</p>
+  <% } else { %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th><%= t('history.table.title') %></th>
+          <th><%= t('history.table.author') %></th>
+          <th><%= t('history.table.created') %></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% revisions.forEach((rev) => { %>
+          <% const revAuthorColor = rev.authorRole && rev.authorRole.color ? rev.authorRole.color : null; %>
+          <% const revAuthorClasses = ['user-handle', 'history-author']; %>
+          <% const revAuthorStyle = revAuthorColor && revAuthorColor.hasColor ? revAuthorColor.style : ''; %>
+          <% if (revAuthorColor && revAuthorColor.hasColor) { revAuthorClasses.push('role-colored-text'); revAuthorClasses.push(revAuthorColor.className); } %>
+          <tr>
+            <td><%= rev.revision %></td>
+            <td><%= rev.title %></td>
+            <% const revAuthorBadges = Array.isArray(rev?.authorRole?.badges) ? rev.authorRole.badges : []; %>
+            <td>
+              <span class="user-handle-decorated">
+                <strong class="<%= revAuthorClasses.join(' ') %>" style="<%= revAuthorStyle %>">
+                  <%= rev.author || 'Inconnu' %>
+                </strong>
+                <%- include('partials/userBadges', {
+                  badges: revAuthorBadges,
+                  listClass: ['user-handle-badges', 'user-handle-badges--inline'],
+                  itemClass: 'user-handle-badge-item',
+                  iconClass: 'user-handle-badge-icon',
+                  srOnlyClass: 'sr-only',
+                  ariaLabel: t('common.authorBadgesAria'),
+                }) %>
+              </span>
+            </td>
+            <td><%= rev.created_at %></td>
+            <td>
+              <div class="table-actions">
+                <a class="btn" data-icon="📝" href="/wiki/<%= page.slug_id %>/revisions/<%= rev.revision %>"><%= t('history.view') %></a>
+                <% if (canRevertHistory) { %>
+                  <form
+                    method="post"
+                    action="/admin/pages/<%= page.slug_id %>/revisions/<%= rev.revision %>/revert"
+                    onsubmit="return confirm('<%= t('history.revertConfirm') %>');"
+                  >
+                    <%- include('partials/csrf_field') %>
+                    <button class="btn danger" data-icon="⏪" type="submit"><%= t('history.revert') %></button>
+                  </form>
+                <% } %>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <%- include('admin/paginationControls', { pagination }) %>
+  <% } %>
+</div>
+
+<div class="card">
+  <a class="btn" data-icon="↩️" href="/wiki/<%= page.slug_id %>"><%= t('history.backToPage') %></a>
+</div>

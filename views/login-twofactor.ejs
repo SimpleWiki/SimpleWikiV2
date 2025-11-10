@@ -1,0 +1,59 @@
+<% title = t('twofactor.title'); %>
+<h1><%= t('twofactor.heading') %></h1>
+<p>
+  <%- t('twofactor.totpPrompt', { user: username }) %>
+</p>
+<% if (error) { %>
+  <div class="card alert error"><%= error %></div>
+<% } %>
+<form method="post" action="/login/two-factor" class="card form">
+  <%- include('partials/csrf_field') %>
+  <input type="hidden" name="mode" value="totp" />
+  <div class="field">
+    <label for="twofactor-token"><%= t('twofactor.fields.code') %></label>
+    <input
+      id="twofactor-token"
+      name="token"
+      type="text"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      maxlength="6"
+      required
+      placeholder="123456"
+      title="<%= t('twofactor.fields.codeTitle') %>"
+    />
+  </div>
+  <div class="actions">
+    <button class="btn success" data-icon="✅"><%= t('twofactor.actions.validate') %></button>
+  </div>
+</form>
+
+<% if (remainingRecoveryCodes > 0) { %>
+  <section class="card">
+    <h2><%= t('twofactor.recovery.title') %></h2>
+    <p>
+      <%- t('twofactor.recovery.prompt', { left: remainingRecoveryCodes }) %>
+    </p>
+    <form method="post" action="/login/two-factor" class="form recovery-form">
+      <%- include('partials/csrf_field') %>
+      <input type="hidden" name="mode" value="recovery" />
+      <div class="field">
+        <label for="recovery-code"><%= t('twofactor.recovery.field') %></label>
+        <input
+          id="recovery-code"
+          name="recoveryCode"
+          type="text"
+          required
+          placeholder="EXEMPLE-12345"
+        />
+      </div>
+      <div class="actions">
+        <button class="btn" data-icon="🔁"><%= t('twofactor.recovery.submit') %></button>
+      </div>
+    </form>
+  </section>
+<% } else { %>
+  <p class="text-muted">
+    <%= t('twofactor.recovery.noneLeft') %>
+  </p>
+<% } %>

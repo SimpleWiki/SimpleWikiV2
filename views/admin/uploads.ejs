@@ -1,0 +1,342 @@
+<% title = t('admin.uploads.title'); %>
+<%
+  const csrfQuerySuffix =
+    typeof csrfToken === 'string' && csrfToken.length
+      ? `?_csrf=${encodeURIComponent(csrfToken)}`
+      : '';
+%>
+<h1><%= t('admin.uploads.heading') %></h1>
+<div class="card mb-md">
+  <h2><%= t('admin.uploads.add.title') %></h2>
+  <p class="mt-xs"><%= t('admin.uploads.add.intro') %></p>
+  <form id="uploadForm" action="/admin/uploads<%= csrfQuerySuffix %>" method="post" enctype="multipart/form-data" class="flex flex-wrap gap-sm mt-sm">
+    <%- include('../partials/csrf_field') %>
+    <div class="flex-basis-220">
+      <input type="file" id="imageInput" name="image" accept="image/*" required aria-label="<%= t('admin.uploads.fields.image') %>" />
+    </div>
+    <div class="flex-basis-220">
+      <input type="text" id="displayNameInput" name="displayName" placeholder="<%= t('admin.uploads.fields.displayNamePlaceholder') %>" maxlength="120" aria-label="<%= t('admin.uploads.fields.displayNamePlaceholder') %>" />
+    </div>
+    <div class="self-end">
+      <button class="btn success" data-icon="🚀" type="submit"><%= t('admin.uploads.actions.upload') %></button>
+    </div>
+  </form>
+  <div id="uploadMessage" class="mt-sm"></div>
+</div>
+
+<form method="get" class="card mb-md">
+  <div class="flex flex-wrap gap-sm items-end">
+    <label class="stack-form">
+      <span class="text-sm text-muted"><%= t('admin.uploads.search.label') %></span>
+      <input
+        type="text"
+        name="search"
+        value="<%= typeof searchTerm === 'string' ? searchTerm : '' %>"
+        placeholder="<%= t('admin.uploads.search.placeholder') %>"
+        class="flex-basis-260"
+      />
+    </label>
+    <input type="hidden" name="page" value="1" />
+    <input type="hidden" name="perPage" value="<%= pagination.perPage %>" />
+    <button class="btn" data-icon="🔍" type="submit"><%= t('admin.uploads.search.button') %></button>
+    <% if (searchTerm) { %>
+      <a class="btn secondary" href="/admin/uploads"><%= t('admin.uploads.search.reset') %></a>
+    <% } %>
+  </div>
+</form>
+
+<% const avatarUploads = Array.isArray(profileUploads) ? profileUploads : []; %>
+
+<% if (uploads.length) { %>
+  <div class="table-wrap">
+    <table class="data-table" id="uploadsTable">
+      <thead>
+        <tr>
+          <th><%= t('admin.uploads.table.preview') %></th>
+          <th><%= t('admin.uploads.table.details') %></th>
+          <th><%= t('admin.uploads.table.customName') %></th>
+          <th><%= t('admin.uploads.table.actions') %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% uploads.forEach(upload => { %>
+          <% const displayName = upload.displayName || ''; %>
+          <% const createdAt = upload.createdAt ? fmt.dateTime(upload.createdAt) : '—'; %>
+          <% const sizeLabel = upload.size ? fmt.number(Math.max(1, Math.round(upload.size / 1024))) + ' ' + t('common.size.kb') : '—'; %>
+          <tr>
+            <td>
+              <img src="<%= upload.url %>" alt="" class="upload-thumb" />
+            </td>
+          <td class="leading-snug">
+            <div><strong><%= t('admin.uploads.details.snowflake') %></strong> <code><%= upload.id %></code></div>
+            <div><strong><%= t('admin.uploads.details.originalName') %></strong> <%= upload.originalName %></div>
+            <div><strong><%= t('admin.uploads.details.displayName') %></strong> <%= displayName || '—' %></div>
+            <div><strong><%= t('admin.uploads.details.size') %></strong> <%= sizeLabel %></div>
+            <div><strong><%= t('admin.uploads.details.added') %></strong> <%= createdAt %></div>
+          </td>
+          <td>
+            <form method="post" action="/admin/uploads/<%= upload.id %>/name" class="stack-form">
+              <%- include('../partials/csrf_field') %>
+              <input type="text" name="displayName" value="<%= displayName %>" maxlength="120" placeholder="<%= t('admin.uploads.fields.displayName') %>" />
+              <button class="btn success" data-icon="💾" type="submit"><%= t('admin.uploads.actions.save') %></button>
+            </form>
+          </td>
+          <td>
+            <% const altText = displayName || upload.originalName || ''; %>
+            <div class="upload-actions" data-url="<%= upload.url %>" data-alt="<%= altText %>">
+              <button class="btn copy-upload" data-icon="📋" type="button"><%= t('admin.uploads.actions.copyLink') %></button>
+              <form method="post" action="/admin/uploads/<%= upload.id %>/delete" onsubmit="return confirm(<%= JSON.stringify(t('admin.uploads.actions.deleteConfirm')) %>)">
+                <%- include('../partials/csrf_field') %>
+                <button class="btn unlike" data-icon="🗑️" type="submit"><%= t('admin.uploads.actions.delete') %></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('./paginationControls', { pagination }) %>
+<% } else { %>
+  <p class="card text-muted"><%= t('admin.uploads.empty') %></p>
+<% } %>
+
+<% if (avatarUploads.length) { %>
+  <div class="card mb-md">
+    <h2><%= t('admin.uploads.avatars.title') %></h2>
+    <p class="mt-xs text-muted"><%= t('admin.uploads.avatars.storedIn') %> <code>/public/uploads/profiles</code>.</p>
+    <div class="table-wrap">
+      <table class="data-table" id="profileUploadsTable">
+        <thead>
+          <tr>
+            <th><%= t('admin.uploads.table.preview') %></th>
+            <th><%= t('admin.uploads.table.details') %></th>
+            <th><%= t('admin.uploads.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% avatarUploads.forEach((avatar) => { %>
+            <% const createdAt = avatar.createdAt ? fmt.dateTime(avatar.createdAt) : '—'; %>
+            <% const sizeLabel = avatar.size ? fmt.number(Math.max(1, Math.round(avatar.size / 1024))) + ' ' + t('common.size.kb') : '—'; %>
+            <tr>
+              <td>
+                <img src="<%= avatar.url %>" alt="" class="upload-thumb" />
+              </td>
+              <td class="leading-snug">
+                <div><strong><%= t('admin.uploads.details.relativePath') %></strong> <code><%= avatar.relativePath %></code></div>
+                <div><strong><%= t('admin.uploads.details.filename') %></strong> <%= avatar.filename %></div>
+                <div><strong><%= t('admin.uploads.details.size') %></strong> <%= sizeLabel %></div>
+                <div><strong><%= t('admin.uploads.details.modified') %></strong> <%= createdAt %></div>
+              </td>
+              <td>
+                <div class="upload-actions" data-url="<%= avatar.url %>" data-alt="<%= avatar.filename %>">
+                  <button class="btn copy-upload" data-icon="📋" type="button"><%= t('admin.uploads.actions.copyLink') %></button>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<script>
+  const i18n = {
+    copyDefaultLabel: <%- JSON.stringify(t('admin.uploads.actions.copyLink')) %>,
+    copySuccessLabel: <%- JSON.stringify(t('admin.uploads.copySuccess')) %>,
+    chooseFile: <%- JSON.stringify(t('admin.uploads.errors.chooseFile')) %>,
+    optimizing: <%- JSON.stringify(t('admin.uploads.optimizing')) %>,
+    serverError: (status) => <%- JSON.stringify(t('admin.uploads.errors.server', { status: '{status}' })) %>.replace('{status}', String(status || '')),
+    unexpectedResponse: <%- JSON.stringify(t('admin.uploads.errors.unexpected')) %>,
+    uploadError: <%- JSON.stringify(t('admin.uploads.errors.upload')) %>,
+    uploadSuccess: <%- JSON.stringify(t('admin.uploads.success')) %>,
+    deleteConfirm: <%- JSON.stringify(t('admin.uploads.actions.deleteConfirm')) %>,
+  };
+  const uploadForm = document.getElementById('uploadForm');
+  const uploadMessage = document.getElementById('uploadMessage');
+  const uploadsTable = document.getElementById('uploadsTable');
+  const uploadActionsSelector = '.upload-actions';
+  const copyDefaultLabel = i18n.copyDefaultLabel;
+  const copySuccessLabel = i18n.copySuccessLabel;
+  const csrfTokenInput = document.querySelector('input[name="_csrf"]');
+  const csrfToken = csrfTokenInput?.value || '';
+
+  function buildCopyValue(url) {
+    if (!url) return '';
+    try {
+      return new URL(url, window.location.origin).toString();
+    } catch (error) {
+      return url;
+    }
+  }
+
+  function prepareCopyActions(container) {
+    if (!container) return;
+    const url = container.dataset.url || '';
+    const button = container.querySelector('.copy-upload');
+    if (button) {
+      button.dataset.snippet = buildCopyValue(url);
+      if (!button.dataset.originalText) {
+        button.dataset.originalText = button.textContent || copyDefaultLabel;
+      }
+    }
+  }
+
+  function escapeHtml(value) {
+    return (value ?? '').toString().replace(/[&<>"']/g, (char) => {
+      switch (char) {
+        case '&': return '&amp;';
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '"': return '&quot;';
+        case "'": return '&#39;';
+        default: return char;
+      }
+    });
+  }
+
+  function setMessage(text, type = 'info') {
+    uploadMessage.innerHTML = '';
+    if (!text) return;
+    const box = document.createElement('div');
+    box.textContent = text;
+    box.classList.add('alert');
+    if (type === 'error') {
+      box.classList.add('alert-error');
+    } else if (type === 'success') {
+      box.classList.add('alert-success');
+    } else {
+      box.classList.add('alert-info');
+    }
+    uploadMessage.appendChild(box);
+  }
+
+  function prependUploadRow(data) {
+    if (!uploadsTable) {
+      window.location.reload();
+      return;
+    }
+    const tbody = uploadsTable.querySelector('tbody');
+    if (!tbody) {
+      window.location.reload();
+      return;
+    }
+
+    const tr = document.createElement('tr');
+    const displayName = data.displayName || '';
+    const originalName = data.originalName || data.name || '';
+    const safeUrl = escapeHtml(data.url);
+    const safeId = escapeHtml(data.id);
+    const csrfField = csrfToken
+      ? `<input type="hidden" name="_csrf" value="${escapeHtml(csrfToken)}" />`
+      : '';
+
+    tr.innerHTML = `
+      <td>
+        <img src="${safeUrl}" alt="" class="upload-thumb" />
+      </td>
+      <td class="leading-snug">
+        <div><strong><%= t('admin.uploads.details.snowflake') %></strong> <code>${safeId}</code></div>
+        <div><strong><%= t('admin.uploads.details.originalName') %></strong> ${escapeHtml(originalName)}</div>
+        <div><strong><%= t('admin.uploads.details.displayName') %></strong> ${displayName ? escapeHtml(displayName) : '—'}</div>
+        <div><strong><%= t('admin.uploads.details.size') %></strong> ${Math.max(1, Math.round((data.size || 0) / 1024))} <%= t('common.size.kb') %></div>
+        <div><strong><%= t('admin.uploads.details.added') %></strong> ${new Date().toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')}
+      </td>
+      <td>
+        <form method="post" action="/admin/uploads/${safeId}/name" class="stack-form">
+          ${csrfField}
+          <input type="text" name="displayName" value="${escapeHtml(displayName)}" maxlength="120" placeholder="<%- t('admin.uploads.fields.displayName') %>" />
+          <button class="btn success" data-icon="💾" type="submit"><%- t('admin.uploads.actions.save') %></button>
+        </form>
+      </td>
+      <td>
+        <div class="upload-actions" data-url="${safeUrl}" data-alt="${escapeHtml(displayName || originalName || '')}">
+          <button class="btn copy-upload" data-icon="📋" type="button"><%- t('admin.uploads.actions.copyLink') %></button>
+          <form method="post" action="/admin/uploads/${safeId}/delete" onsubmit="return confirm(<%- JSON.stringify(t('admin.uploads.actions.deleteConfirm')) %>)">
+            ${csrfField}
+            <button class="btn unlike" data-icon="🗑️" type="submit"><%- t('admin.uploads.actions.delete') %></button>
+          </form>
+        </div>
+      </td>
+    `;
+    tbody.prepend(tr);
+    prepareCopyActions(tr.querySelector(uploadActionsSelector));
+  }
+
+  document.querySelectorAll(uploadActionsSelector).forEach(prepareCopyActions);
+
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('.copy-upload');
+    if (!button) return;
+    const snippet = button.dataset.snippet || '';
+    if (!snippet) return;
+    navigator.clipboard.writeText(snippet).then(() => {
+      const originalText = button.dataset.originalText || button.textContent || copyDefaultLabel;
+      button.dataset.originalText = originalText;
+      button.textContent = copySuccessLabel;
+      setTimeout(() => {
+        button.textContent = originalText || copyDefaultLabel;
+      }, 1500);
+    });
+  });
+
+  if (uploadForm) {
+    uploadForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!uploadForm.image.files.length) {
+        setMessage('Choisissez un fichier avant d\'envoyer.', 'error');
+        return;
+      }
+      const button = uploadForm.querySelector('button[type="submit"]');
+      button.disabled = true;
+      setMessage('Optimisation et upload en cours…');
+      try {
+        const formData = new FormData(uploadForm);
+        const dn = formData.get('displayName');
+        if (dn) formData.set('displayName', dn.toString().trim());
+        const headers = { Accept: 'application/json' };
+        if (csrfToken) {
+          headers['X-CSRF-Token'] = csrfToken;
+        }
+        const response = await fetch(uploadForm.action, {
+          method: 'POST',
+          body: formData,
+          headers,
+          credentials: 'same-origin',
+        });
+        const contentType = response.headers.get('content-type') || '';
+        let payload = null;
+        if (contentType.includes('application/json')) {
+          try {
+            payload = await response.json();
+          } catch (parseError) {
+            console.error('Erreur lors de la lecture de la réponse JSON de l\'upload', parseError);
+          }
+        }
+        if (!payload) {
+          const status = response.status || 0;
+          const message =
+            status >= 400
+              ? `Le serveur a renvoyé une erreur (${status}). Réessayez après avoir actualisé la page.`
+              : "Le serveur a renvoyé une réponse inattendue. Vérifiez votre connexion puis réessayez.";
+          throw new Error(message);
+        }
+        if (!response.ok || payload.ok === false) {
+          throw new Error(payload.message || 'Erreur lors de l\'upload');
+        }
+        if (typeof payload.ok === 'undefined') {
+          throw new Error('Réponse inattendue du serveur.');
+        }
+        setMessage('Image envoyée avec succès.', 'success');
+        prependUploadRow(payload);
+        uploadForm.reset();
+      } catch (err) {
+        setMessage(err.message || 'Erreur lors de l\'upload', 'error');
+      } finally {
+        const btn = uploadForm.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+</script>

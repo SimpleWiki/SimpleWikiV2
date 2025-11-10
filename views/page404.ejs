@@ -1,0 +1,13 @@
+<% title = t('page404.title'); %>
+<section class="card not-found-card">
+  <div class="not-found-hero">
+    <span class="not-found-code">404</span>
+    <h1><%= t('page404.heading') %></h1>
+    <p class="text-muted"><%= t('page404.message') %></p>
+  </div>
+  <div class="not-found-actions">
+    <a class="btn" data-icon="🏠" href="/"><%= t('page404.actions.home') %></a>
+    <a class="btn secondary" data-icon="🔍" href="/search"><%= t('page404.actions.search') %></a>
+    <a class="btn" data-icon="✍️" href="/new"><%= t('page404.actions.create') %></a>
+  </div>
+</section>

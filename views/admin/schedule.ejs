@@ -1,0 +1,69 @@
+<% title = t('admin.schedule.title'); %>
+<h1><%= t('admin.schedule.heading') %></h1>
+
+<section class="card">
+  <h2 class="mt-0"><%= t('admin.schedule.upcoming.title') %></h2>
+  <% if (!scheduledPages || !scheduledPages.length) { %>
+    <p><%= t('admin.schedule.upcoming.empty') %></p>
+  <% } else { %>
+    <p class="text-muted">
+      <%- t('admin.schedule.upcoming.count', { count: fmt.number(scheduledPages.length) }) %>
+    </p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th><%= t('admin.schedule.table.title') %></th>
+            <th><%= t('admin.schedule.table.publishAt') %></th>
+            <th><%= t('admin.schedule.table.author') %></th>
+            <th><%= t('admin.schedule.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% scheduledPages.forEach(page => { %>
+            <tr>
+              <td>
+                <div class="table-title"><strong><%= page.title || t('admin.schedule.untitled') %></strong></div>
+                <div class="table-meta text-muted">
+                  <span><%= t('admin.schedule.slug') %> <code><%= page.slug_id %></code></span>
+                  <% if (page.updated_at) { %>
+                    — <%= t('admin.schedule.lastUpdated') %> <%= fmt.dateTime(page.updated_at) %>
+                  <% } %>
+                </div>
+              </td>
+              <td>
+                <% if (page.publishAtIso) { %>
+                  <time datetime="<%= page.publishAtIso %>"><%= fmt.dateTime(page.publishAtIso) %></time>
+                  <% if (page.publishAtRelative) { %>
+                    <div class="text-muted"><%= page.publishAtRelative %></div>
+                  <% } %>
+                <% } else { %>
+                  <span class="text-muted">—</span>
+                <% } %>
+              </td>
+              <td><%= page.author || t('admin.common.anonymous') %></td>
+              <td>
+                <div class="flex flex-wrap gap-xs">
+                  <form method="post" action="/admin/schedule/<%= page.slug_id %>/publish">
+                    <%- include('../partials/csrf_field') %>
+                    <button class="btn success btn-compact" type="submit"><%= t('admin.schedule.actions.publishNow') %></button>
+                  </form>
+                  <a class="btn secondary btn-compact" href="/wiki/<%= page.slug_id %>/edit"><%= t('admin.schedule.actions.edit') %></a>
+                  <form
+                    method="post"
+                    action="/admin/schedule/<%= page.slug_id %>/cancel"
+                    onsubmit="return confirm(t('admin.schedule.actions.cancelConfirm'))"
+                  >
+                    <%- include('../partials/csrf_field') %>
+                    <button class="btn danger btn-compact" type="submit"><%= t('admin.schedule.actions.cancel') %></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+
