@@ -831,7 +831,7 @@ export default {
   edit: {
     title: { edit: "Edit", new: "New page" },
     submission: { notice: "Your submission will be saved with your IP address and an administrator will need to approve it before publishing." },
-    fields: { title: "Title", content: "Content (with [[internal]] links)", tags: "Tags (comma-separated)" },
+    fields: { title: "Title", content: "Content", tags: "Tags (comma-separated)" },
     modes: { markdown: "Advanced Markdown", visual: "Visual mode (drag & drop)" },
     toolbar: {
       aria: "Formatting tools",
@@ -904,7 +904,7 @@ export default {
     },
     fields: {
       title: "Title",
-      content: "Content (with [[internal]] links)",
+      content: "Content",
       tags: "Tags (comma-separated)",
       author: {
         label: "Displayed author",

@@ -833,7 +833,7 @@ export default {
     submission: { notice: "Votre proposition sera enregistrée avec votre adresse IP et un administrateur devra la valider avant publication." },
     fields: {
       title: "Titre",
-      content: "Contenu (liens [[internes]])",
+      content: "Contenu",
       tags: "Tags (séparés par des virgules)",
       author: {
         label: "Auteur affiché",
