@@ -684,6 +684,7 @@ export default {
         help: "Targeted restrictions prevent an account from performing certain actions or accessing the whole wiki.",
         noPermission: "You do not have permission to restrict user actions.",
       },
+      userRestrictionsHeading: "Restrict user actions and add bans",
       add: {
         title: "Add a ban",
         ip: "IP address",

@@ -619,6 +619,7 @@ export default {
         help: "Les restrictions ciblées empêchent un compte d'effectuer certaines actions ou d'accéder au wiki entier.",
         noPermission: "Vous n'avez pas la permission de restreindre des actions utilisateur.",
       },
+      userRestrictionsHeading: "Restreindre des actions et ajouter un blocage",
       add: {
         title: "Ajouter un blocage",
         ip: "Adresse IP",

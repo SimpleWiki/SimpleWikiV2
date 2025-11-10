@@ -37,114 +37,118 @@
 </form>
 
 <section class="card mb-xl">
-  <h2><%= t('admin.ipBans.userActions.title') %></h2>
-  <% if (canManageUserBansLocal) { %>
-    <form method="post" action="/admin/ip-bans/users/actions" class="grid grid-auto">
-      <%- include('../partials/csrf_field') %>
-      <div>
-        <label for="user-action-target"><%= t('admin.ipBans.userActions.user') %></label>
-        <input
-          id="user-action-target"
-          type="text"
-          name="user"
-          placeholder="<%= t('admin.ipBans.userActions.userPlaceholder') %>"
-          required
-        >
-      </div>
-      <fieldset class="grid-span-full stack-form">
-        <legend><%= t('admin.ipBans.userActions.legend') %></legend>
-        <div class="flex flex-wrap gap-sm">
-          <% const actionLabels = {
-            global: t('admin.ipBans.actions.global'),
-            view: t('admin.ipBans.actions.view'),
-            comment: t('admin.ipBans.actions.comment'),
-            like: t('admin.ipBans.actions.like'),
-            react: t('admin.ipBans.actions.react'),
-            contribute: t('admin.ipBans.actions.contribute'),
-            tag: t('admin.ipBans.actions.tag'),
-            edit: t('admin.ipBans.actions.edit'),
-            delete: t('admin.ipBans.actions.delete'),
-            manual_publish: t('admin.ipBans.actions.manual_publish'),
-            cancel_schedule: t('admin.ipBans.actions.cancel_schedule'),
-            revert_revision: t('admin.ipBans.actions.revert_revision'),
-            permanent_delete: t('admin.ipBans.actions.permanent_delete'),
-          }; %>
-          <% Object.keys(actionLabels).forEach(key => { %>
-            <label class="checkbox">
-              <input type="checkbox" name="actions" value="<%= key %>">
-              <span><%= actionLabels[key] %></span>
-            </label>
-          <% }) %>
+  <h2><%= t('admin.ipBans.userRestrictionsHeading') %></h2>
+  <div class="grid gap-xl lg:grid-cols-2">
+    <div class="stack">
+      <h3 class="text-lg"><%= t('admin.ipBans.userActions.title') %></h3>
+      <% if (canManageUserBansLocal) { %>
+        <form method="post" action="/admin/ip-bans/users/actions" class="grid grid-auto">
+          <%- include('../partials/csrf_field') %>
+          <div>
+            <label for="user-action-target"><%= t('admin.ipBans.userActions.user') %></label>
+            <input
+              id="user-action-target"
+              type="text"
+              name="user"
+              placeholder="<%= t('admin.ipBans.userActions.userPlaceholder') %>"
+              required
+            >
+          </div>
+          <fieldset class="grid-span-full stack-form">
+            <legend><%= t('admin.ipBans.userActions.legend') %></legend>
+            <div class="flex flex-wrap gap-sm">
+              <% const actionLabels = {
+                global: t('admin.ipBans.actions.global'),
+                view: t('admin.ipBans.actions.view'),
+                comment: t('admin.ipBans.actions.comment'),
+                like: t('admin.ipBans.actions.like'),
+                react: t('admin.ipBans.actions.react'),
+                contribute: t('admin.ipBans.actions.contribute'),
+                tag: t('admin.ipBans.actions.tag'),
+                edit: t('admin.ipBans.actions.edit'),
+                delete: t('admin.ipBans.actions.delete'),
+                manual_publish: t('admin.ipBans.actions.manual_publish'),
+                cancel_schedule: t('admin.ipBans.actions.cancel_schedule'),
+                revert_revision: t('admin.ipBans.actions.revert_revision'),
+                permanent_delete: t('admin.ipBans.actions.permanent_delete'),
+              }; %>
+              <% Object.keys(actionLabels).forEach(key => { %>
+                <label class="checkbox">
+                  <input type="checkbox" name="actions" value="<%= key %>">
+                  <span><%= actionLabels[key] %></span>
+                </label>
+              <% }) %>
+            </div>
+          </fieldset>
+          <div>
+            <label for="user-action-tag"><%= t('admin.ipBans.userActions.tagLabel') %></label>
+            <input
+              id="user-action-tag"
+              type="text"
+              name="tag"
+              placeholder="<%= t('admin.ipBans.userActions.tagPlaceholder') %>"
+            >
+            <p class="help-text"><%= t('admin.ipBans.userActions.tagHelp') %></p>
+          </div>
+          <div class="grid-span-full">
+            <label for="user-action-reason"><%= t('admin.ipBans.userActions.reason') %></label>
+            <input
+              id="user-action-reason"
+              type="text"
+              name="reason"
+              placeholder="<%= t('admin.ipBans.userActions.reasonPlaceholder') %>"
+            >
+          </div>
+          <div class="grid-span-full">
+            <button class="btn warning" type="submit"><%= t('admin.ipBans.userActions.apply') %></button>
+          </div>
+        </form>
+        <p class="help-text"><%= t('admin.ipBans.userActions.help') %></p>
+      <% } else { %>
+        <p><%= t('admin.ipBans.userActions.noPermission') %></p>
+      <% } %>
+    </div>
+    <div class="stack">
+      <h3 class="text-lg"><%= t('admin.ipBans.add.title') %></h3>
+      <form method="post" action="/admin/ip-bans" class="grid grid-auto">
+        <%- include('../partials/csrf_field') %>
+        <div>
+          <label for="ip"><%= t('admin.ipBans.add.ip') %></label>
+          <input id="ip" type="text" name="ip" required>
         </div>
-      </fieldset>
-      <div>
-        <label for="user-action-tag"><%= t('admin.ipBans.userActions.tagLabel') %></label>
-        <input
-          id="user-action-tag"
-          type="text"
-          name="tag"
-          placeholder="<%= t('admin.ipBans.userActions.tagPlaceholder') %>"
-        >
-        <p class="help-text"><%= t('admin.ipBans.userActions.tagHelp') %></p>
-      </div>
-      <div class="grid-span-full">
-        <label for="user-action-reason"><%= t('admin.ipBans.userActions.reason') %></label>
-        <input
-          id="user-action-reason"
-          type="text"
-          name="reason"
-          placeholder="<%= t('admin.ipBans.userActions.reasonPlaceholder') %>"
-        >
-      </div>
-      <div class="grid-span-full">
-        <button class="btn warning" type="submit"><%= t('admin.ipBans.userActions.apply') %></button>
-      </div>
-    </form>
-    <p class="help-text"><%= t('admin.ipBans.userActions.help') %></p>
-  <% } else { %>
-    <p><%= t('admin.ipBans.userActions.noPermission') %></p>
-  <% } %>
-</section>
-
-<section class="card mb-xl">
-  <h2><%= t('admin.ipBans.add.title') %></h2>
-  <form method="post" action="/admin/ip-bans" class="grid grid-auto">
-    <%- include('../partials/csrf_field') %>
-    <div>
-      <label for="ip"><%= t('admin.ipBans.add.ip') %></label>
-      <input id="ip" type="text" name="ip" required>
+        <div>
+          <label for="scope"><%= t('admin.ipBans.add.scope') %></label>
+          <select id="scope" name="scope" required>
+            <option value="global"><%= t('admin.ipBans.actions.global') %></option>
+            <option value="view"><%= t('admin.ipBans.add.scopeView') %></option>
+            <option value="comment"><%= t('admin.ipBans.actions.comment') %></option>
+            <option value="like"><%= t('admin.ipBans.actions.like') %></option>
+            <option value="react"><%= t('admin.ipBans.actions.react') %></option>
+            <option value="contribute"><%= t('admin.ipBans.actions.contribute') %></option>
+            <option value="tag"><%= t('admin.ipBans.add.scopeTagSpecific') %></option>
+            <option value="edit"><%= t('admin.ipBans.actions.edit') %></option>
+            <option value="delete"><%= t('admin.ipBans.actions.delete') %></option>
+            <option value="manual_publish"><%= t('admin.ipBans.actions.manual_publish') %></option>
+            <option value="cancel_schedule"><%= t('admin.ipBans.actions.cancel_schedule') %></option>
+            <option value="revert_revision"><%= t('admin.ipBans.actions.revert_revision') %></option>
+            <option value="permanent_delete"><%= t('admin.ipBans.actions.permanent_delete') %></option>
+          </select>
+        </div>
+        <div>
+          <label for="tag"><%= t('admin.ipBans.add.tagLabel') %></label>
+          <input id="tag" type="text" name="tag" placeholder="<%= t('admin.ipBans.add.tagPlaceholder') %>">
+        </div>
+        <div class="grid-span-full">
+          <label for="reason"><%= t('admin.ipBans.add.reason') %></label>
+          <input id="reason" type="text" name="reason" placeholder="<%= t('admin.ipBans.add.reasonPlaceholder') %>">
+        </div>
+        <div class="grid-span-full">
+          <button class="btn success" type="submit"><%= t('admin.ipBans.add.save') %></button>
+        </div>
+      </form>
+      <p class="help-text"><%= t('admin.ipBans.add.help') %></p>
     </div>
-    <div>
-      <label for="scope"><%= t('admin.ipBans.add.scope') %></label>
-      <select id="scope" name="scope" required>
-        <option value="global"><%= t('admin.ipBans.actions.global') %></option>
-        <option value="view"><%= t('admin.ipBans.add.scopeView') %></option>
-        <option value="comment"><%= t('admin.ipBans.actions.comment') %></option>
-        <option value="like"><%= t('admin.ipBans.actions.like') %></option>
-        <option value="react"><%= t('admin.ipBans.actions.react') %></option>
-        <option value="contribute"><%= t('admin.ipBans.actions.contribute') %></option>
-        <option value="tag"><%= t('admin.ipBans.add.scopeTagSpecific') %></option>
-        <option value="edit"><%= t('admin.ipBans.actions.edit') %></option>
-        <option value="delete"><%= t('admin.ipBans.actions.delete') %></option>
-        <option value="manual_publish"><%= t('admin.ipBans.actions.manual_publish') %></option>
-        <option value="cancel_schedule"><%= t('admin.ipBans.actions.cancel_schedule') %></option>
-        <option value="revert_revision"><%= t('admin.ipBans.actions.revert_revision') %></option>
-        <option value="permanent_delete"><%= t('admin.ipBans.actions.permanent_delete') %></option>
-      </select>
-    </div>
-    <div>
-      <label for="tag"><%= t('admin.ipBans.add.tagLabel') %></label>
-      <input id="tag" type="text" name="tag" placeholder="<%= t('admin.ipBans.add.tagPlaceholder') %>">
-    </div>
-    <div class="grid-span-full">
-      <label for="reason"><%= t('admin.ipBans.add.reason') %></label>
-      <input id="reason" type="text" name="reason" placeholder="<%= t('admin.ipBans.add.reasonPlaceholder') %>">
-    </div>
-    <div class="grid-span-full">
-      <button class="btn success" type="submit"><%= t('admin.ipBans.add.save') %></button>
-    </div>
-  </form>
-  <p class="help-text"><%= t('admin.ipBans.add.help') %></p>
+  </div>
 </section>
 
 <section class="card mb-xl">
@@ -379,4 +383,3 @@
     <%- include('./paginationControls', { pagination: liftedPagination }) %>
   <% } %>
 </section>
-
