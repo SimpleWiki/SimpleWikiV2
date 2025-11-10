@@ -113,29 +113,29 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        const tokenIsAdminValue = token.isAdmin as boolean
+        const adminStatus = token.isAdmin as boolean
 
         (session.user as any).id = token.id as string
         (session.user as any).username = token.username as string
-        (session.user as any).isAdmin = tokenIsAdminValue
+        (session.user as any).isAdmin = adminStatus
         (session.user as any).isModerator = token.isModerator as boolean;
         (session.user as any).isPremium = token.isPremium as boolean;
         // Permissions (admins get all permissions)
-        (session.user as any).canCreatePages = tokenIsAdminValue || (token.canCreatePages as boolean);
-        (session.user as any).canEditOwnPages = tokenIsAdminValue || (token.canEditOwnPages as boolean);
-        (session.user as any).canEditAnyPage = tokenIsAdminValue || (token.canEditAnyPage as boolean);
-        (session.user as any).canPublishPages = tokenIsAdminValue || (token.canPublishPages as boolean);
-        (session.user as any).canDeletePages = tokenIsAdminValue || (token.canDeletePages as boolean);
-        (session.user as any).canManageTags = tokenIsAdminValue || (token.canManageTags as boolean);
-        (session.user as any).canComment = tokenIsAdminValue || (token.canComment as boolean);
-        (session.user as any).canApproveComments = tokenIsAdminValue || (token.canApproveComments as boolean);
-        (session.user as any).canDeleteComments = tokenIsAdminValue || (token.canDeleteComments as boolean);
-        (session.user as any).canManageUsers = tokenIsAdminValue || (token.canManageUsers as boolean);
-        (session.user as any).canManageRoles = tokenIsAdminValue || (token.canManageRoles as boolean);
-        (session.user as any).canManageBadges = tokenIsAdminValue || (token.canManageBadges as boolean);
-        (session.user as any).canViewStats = tokenIsAdminValue || (token.canViewStats as boolean);
-        (session.user as any).canManageSettings = tokenIsAdminValue || (token.canManageSettings as boolean);
-        (session.user as any).canManageReactions = tokenIsAdminValue || (token.canManageReactions as boolean);
+        (session.user as any).canCreatePages = adminStatus || (token.canCreatePages as boolean);
+        (session.user as any).canEditOwnPages = adminStatus || (token.canEditOwnPages as boolean);
+        (session.user as any).canEditAnyPage = adminStatus || (token.canEditAnyPage as boolean);
+        (session.user as any).canPublishPages = adminStatus || (token.canPublishPages as boolean);
+        (session.user as any).canDeletePages = adminStatus || (token.canDeletePages as boolean);
+        (session.user as any).canManageTags = adminStatus || (token.canManageTags as boolean);
+        (session.user as any).canComment = adminStatus || (token.canComment as boolean);
+        (session.user as any).canApproveComments = adminStatus || (token.canApproveComments as boolean);
+        (session.user as any).canDeleteComments = adminStatus || (token.canDeleteComments as boolean);
+        (session.user as any).canManageUsers = adminStatus || (token.canManageUsers as boolean);
+        (session.user as any).canManageRoles = adminStatus || (token.canManageRoles as boolean);
+        (session.user as any).canManageBadges = adminStatus || (token.canManageBadges as boolean);
+        (session.user as any).canViewStats = adminStatus || (token.canViewStats as boolean);
+        (session.user as any).canManageSettings = adminStatus || (token.canManageSettings as boolean);
+        (session.user as any).canManageReactions = adminStatus || (token.canManageReactions as boolean);
       }
       return session
     },
