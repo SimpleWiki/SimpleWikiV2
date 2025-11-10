@@ -38,24 +38,6 @@
   <input type="text" name="title" value="<%= titleFieldValue %>" required />
   <label><%= t('edit.fields.content') %></label>
   <textarea name="content" id="contentField" rows="18" required hidden><%- contentFieldValue %></textarea>
-  <div class="editor-mode-switch" data-editor-mode-switch>
-    <button
-      type="button"
-      class="mode-toggle is-active"
-      data-editor-mode="markdown"
-      aria-pressed="true"
-    >
-      <%= t('edit.modes.markdown') %>
-    </button>
-    <button
-      type="button"
-      class="mode-toggle"
-      data-editor-mode="visual"
-      aria-pressed="false"
-    >
-      <%= t('edit.modes.visual') %>
-    </button>
-  </div>
   <div class="editor-shell" data-editor-shell>
     <div
       class="markdown-editor-shell"
