@@ -44,12 +44,26 @@ export function csrfProtection() {
 
     const providedToken = extractToken(req);
     if (!providedToken || providedToken !== token) {
-      const message =
+      const fallbackMessage =
         "Action bloquée : impossible de vérifier votre jeton de sécurité. Veuillez réessayer.";
+      const hasTranslator = typeof req.t === "function";
+      const message =
+        (hasTranslator && req.t("errors.csrf.message")) || fallbackMessage;
       if (req.accepts("json") && !req.accepts("html")) {
         return res.status(403).json({ ok: false, message });
       }
-      return res.status(403).render("error", { message });
+      const renderOptions = { message };
+      if (hasTranslator) {
+        const heading = req.t("errors.csrf.heading");
+        const title = req.t("errors.csrf.title");
+        if (heading) {
+          renderOptions.errorHeading = heading;
+        }
+        if (title) {
+          renderOptions.errorTitle = title;
+        }
+      }
+      return res.status(403).render("error", renderOptions);
     }
 
     return next();

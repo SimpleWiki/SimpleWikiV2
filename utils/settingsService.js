@@ -4,7 +4,10 @@ import {
   normalizeChangelogMode,
   verifyGitHubRepoExists,
 } from "./githubService.js";
-import { normalizeHttpUrl, normalizeStoredHttpUrl } from "./urlValidation.js";
+import {
+  normalizeHttpUrl,
+  isValidHttpUrl,
+} from "./urlValidation.js";
 
 const SETTINGS_CACHE_TTL_MS = 30 * 1000;
 const DEFAULT_SETTINGS = {
@@ -22,10 +25,47 @@ const CACHE_STATE = {
   expiresAt: 0,
 };
 
+function isLocalLogoPath(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+  return (
+    value.startsWith("/public/uploads/") || value.startsWith("/uploads/")
+  );
+}
+
+function normalizeStoredLogoReference(rawValue) {
+  if (typeof rawValue !== "string") {
+    return "";
+  }
+  const trimmed = rawValue.trim();
+  if (!trimmed) {
+    return "";
+  }
+  if (isLocalLogoPath(trimmed)) {
+    return trimmed;
+  }
+  return isValidHttpUrl(trimmed) ? trimmed : "";
+}
+
+function normalizeLogoInput(rawValue) {
+  if (typeof rawValue !== "string") {
+    return null;
+  }
+  const trimmed = rawValue.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (isLocalLogoPath(trimmed)) {
+    return trimmed;
+  }
+  return normalizeHttpUrl(trimmed, { fieldName: "L'URL du logo" });
+}
+
 function normalizeSettings(row = {}) {
   return {
     wikiName: row.wiki_name ?? row.wikiName ?? DEFAULT_SETTINGS.wikiName,
-    logoUrl: normalizeStoredHttpUrl(
+    logoUrl: normalizeStoredLogoReference(
       row.logo_url ?? row.logoUrl ?? DEFAULT_SETTINGS.logoUrl,
     ),
     adminWebhook:
@@ -103,19 +143,20 @@ export async function updateSiteSettingsFromForm(input = {}) {
       input.githubChangelogMode,
   );
 
+  const currentSettings = await getSiteSettings();
   const rawLogoInput =
     typeof input.logo_url === "string"
       ? input.logo_url
       : typeof input.logoUrl === "string"
       ? input.logoUrl
       : "";
-  let logoUrl = "";
-  if (rawLogoInput) {
+  let logoUrl = currentSettings.logoUrl || "";
+  const trimmedLogoInput =
+    typeof rawLogoInput === "string" ? rawLogoInput.trim() : "";
+  if (trimmedLogoInput) {
     try {
-      logoUrl =
-        normalizeHttpUrl(rawLogoInput, {
-          fieldName: "L'URL du logo",
-        }) || "";
+      const normalizedLogo = normalizeLogoInput(trimmedLogoInput);
+      logoUrl = normalizedLogo ?? "";
     } catch (err) {
       throw new Error(err?.message || "L'URL du logo est invalide.");
     }

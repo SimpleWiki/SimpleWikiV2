@@ -1,5 +1,7 @@
-<% title = t('errors.500.title'); %>
+<% const pageTitle = typeof errorTitle !== 'undefined' ? errorTitle : t('errors.500.title'); %>
+<% title = pageTitle; %>
+<% const headingText = typeof errorHeading !== 'undefined' ? errorHeading : t('errors.500.heading'); %>
 <main class="error">
-  <h1><%= t('errors.500.heading') %></h1>
+  <h1><%= headingText %></h1>
   <p><%= message %></p>
 </main>

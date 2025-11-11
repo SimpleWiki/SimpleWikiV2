@@ -16,7 +16,7 @@
   </p>
 
   <% if (canCreateBadges) { %>
-    <form method="post" action="/admin/badges/success" class="badge-form mt-sm">
+    <form method="post" action="/admin/badges/success" class="badge-form mt-sm" enctype="multipart/form-data">
       <%- include('../partials/csrf_field') %>
       <div class="grid grid-cols-responsive gap-sm">
         <label class="stack-form">
@@ -40,11 +40,11 @@
           <input type="text" name="emoji" maxlength="16" placeholder="🏆" />
         </label>
         <label class="stack-form">
-          <span class="text-sm text-muted">Image (URL)</span>
-          <input type="url" name="imageUrl" maxlength="500" placeholder="https://exemple.com/badges/succes.png" />
+          <span class="text-sm text-muted">Fichier image</span>
+          <input type="file" name="imageFile" accept="image/*" />
+          <span class="text-sm text-muted mt-xs">PNG, JPG, GIF ou WebP (≤ 5 Mo).</span>
         </label>
       </div>
-      <%- include('../partials/uploadHelper') %>
       <label class="stack-form mt-sm">
         <span class="text-sm text-muted">Description</span>
         <textarea name="description" rows="2" maxlength="240" placeholder="Expliquez quand ce badge est attribué."></textarea>
@@ -94,7 +94,7 @@
           <% if (canEditBadges) { %>
             <section class="badge-card__section">
               <h3 class="badge-card__section-title">Modifier ce badge de succès</h3>
-              <form method="post" action="/admin/badges/success/<%= badge.snowflakeId %>/update" class="badge-card__form">
+              <form method="post" action="/admin/badges/success/<%= badge.snowflakeId %>/update" class="badge-card__form" enctype="multipart/form-data">
                 <%- include('../partials/csrf_field') %>
                 <div class="grid grid-cols-responsive gap-sm">
                   <label class="stack-form">
@@ -117,11 +117,11 @@
                     <input type="text" name="emoji" maxlength="16" value="<%= badge.emoji %>" />
                   </label>
                   <label class="stack-form">
-                    <span class="text-sm text-muted">Image (URL)</span>
-                    <input type="url" name="imageUrl" maxlength="500" value="<%= badge.imageUrl || '' %>" />
+                    <span class="text-sm text-muted">Fichier image</span>
+                    <input type="file" name="imageFile" accept="image/*" />
+                    <span class="text-sm text-muted mt-xs">PNG, JPG, GIF ou WebP (≤ 5 Mo).</span>
                   </label>
                 </div>
-                <%- include('../partials/uploadHelper') %>
                 <label class="stack-form mt-sm">
                   <span class="text-sm text-muted">Description</span>
                   <textarea name="description" rows="2" maxlength="240"><%= badge.description %></textarea>
@@ -190,7 +190,7 @@
 </section>
 
 <% if (canCreateBadges) { %>
-  <form method="post" class="card mt-md badge-form">
+  <form method="post" class="card mt-md badge-form" enctype="multipart/form-data">
     <%- include('../partials/csrf_field') %>
     <h2 class="mt-0">Nouveau badge</h2>
     <div class="grid grid-cols-responsive gap-sm">
@@ -203,11 +203,11 @@
         <input type="text" name="emoji" maxlength="16" placeholder="🏅" />
       </label>
       <label class="stack-form">
-        <span class="text-sm text-muted">Image (URL)</span>
-        <input type="url" name="imageUrl" maxlength="500" placeholder="https://exemple.com/badges/honneur.png" />
+        <span class="text-sm text-muted">Fichier image</span>
+        <input type="file" name="imageFile" accept="image/*" />
+        <span class="text-sm text-muted mt-xs">PNG, JPG, GIF ou WebP (≤ 5 Mo).</span>
       </label>
     </div>
-    <%- include('../partials/uploadHelper') %>
     <label class="stack-form mt-sm">
       <span class="text-sm text-muted">Description</span>
       <textarea name="description" rows="2" maxlength="240" placeholder="Expliquez la signification du badge."></textarea>
@@ -254,7 +254,7 @@
         <% if (canEditBadges && !badge.isAutomatic) { %>
           <section class="badge-card__section">
             <h3 class="badge-card__section-title">Modifier ce badge</h3>
-            <form method="post" action="/admin/badges/<%= badge.snowflakeId %>/update" class="badge-card__form">
+            <form method="post" action="/admin/badges/<%= badge.snowflakeId %>/update" class="badge-card__form" enctype="multipart/form-data">
               <%- include('../partials/csrf_field') %>
               <div class="grid grid-cols-responsive gap-sm">
                 <label class="stack-form">
@@ -266,11 +266,11 @@
                   <input type="text" name="emoji" maxlength="16" value="<%= badge.emoji %>" />
                 </label>
                 <label class="stack-form">
-                  <span class="text-sm text-muted">Image (URL)</span>
-                  <input type="url" name="imageUrl" maxlength="500" value="<%= badge.imageUrl || '' %>" />
+                  <span class="text-sm text-muted">Fichier image</span>
+                  <input type="file" name="imageFile" accept="image/*" />
+                  <span class="text-sm text-muted mt-xs">PNG, JPG, GIF ou WebP (≤ 5 Mo).</span>
                 </label>
               </div>
-              <%- include('../partials/uploadHelper') %>
               <label class="stack-form mt-sm">
                 <span class="text-sm text-muted">Description</span>
                 <textarea name="description" rows="2" maxlength="240"><%= badge.description %></textarea>

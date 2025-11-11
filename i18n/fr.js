@@ -15,6 +15,11 @@ export default {
     unexpected: "Une erreur inattendue est survenue.",
     forbiddenAction: "Vous n'avez pas la permission d'effectuer cette action.",
     forbiddenPage: "Vous n'avez pas la permission d'accéder à cette page.",
+    csrf: {
+      title: "Action bloquée",
+      heading: "Action bloquée",
+      message: "Action bloquée : impossible de vérifier votre jeton de sécurité. Veuillez réessayer.",
+    },
     '500': {
       title: "Erreur 500",
       heading: "Erreur 500",
@@ -89,12 +94,19 @@ export default {
       heading: "Paramètres généraux",
       fields: {
         wikiName: "Nom du wiki",
-        logoUrl: "URL du logo",
+        logoFile: "Logo (fichier)",
         adminWebhook: "Webhook Discord (administration)",
         feedWebhook: "Webhook Discord (flux)",
         footerText: "Texte de bas de page",
         githubRepo: "Dépôt GitHub pour le changelog",
         changelogSource: "Source du changelog",
+      },
+      hints: {
+        logoFile: "Fichier PNG, JPG, GIF ou WebP (≤ 5 Mo).",
+        currentLogo: "Logo actuel",
+      },
+      aria: {
+        logoPreview: "Aperçu du logo actuel",
       },
       placeholders: {
         repo: "owner/repo ou URL https://github.com/...",
@@ -424,6 +436,36 @@ export default {
         filename: "Nom de fichier :",
         modified: "Modifié :",
       },
+      categories: {
+        general: {
+          title: "Médias gérés",
+          description: "Les fichiers envoyés ici sont stockés dans /public/uploads et peuvent être utilisés sur tout le site.",
+        },
+        profiles: {
+          empty: "Aucun avatar de profil pour le moment.",
+        },
+      },
+      commentAttachments: {
+        title: "Pièces jointes de commentaires",
+        description: "Les fichiers envoyés avec les commentaires sont stockés sous /public/uploads/comments.",
+        empty: "Aucune pièce jointe pour le moment.",
+        table: {
+          context: "Contexte",
+        },
+        details: {
+          file: "Fichier :",
+          mimeType: "Type :",
+          uploaded: "Envoyé le :",
+          comment: "Commentaire :",
+          page: "Article :",
+          commentAuthor: "Auteur :",
+          commentStatus: "Statut :",
+        },
+        actions: {
+          deleteConfirm: "Supprimer cette pièce jointe ?",
+        },
+        deleted: "Pièce jointe supprimée.",
+      },
       empty: "Aucune image disponible pour le moment.",
       avatars: { title: "Avatars de profil", storedIn: "Fichiers stockés dans" },
       copySuccess: "Lien copié !",
@@ -449,11 +491,34 @@ export default {
       heading: "Emojis & Réactions",
       intro: "Personnalisez la palette de réactions affichée sur les articles et les commentaires. Chaque réaction doit avoir un identifiant unique ainsi qu’un emoji ou une image personnalisée.",
       add: { title: "Ajouter une réaction" },
-      fields: { id: "Identifiant", label: "Libellé", emoji: "Emoji", imageUrl: "URL d’image" },
-      placeholders: { id: "ex. bravo-plus", label: "Texte affiché", emoji: "🙂", imageUrl: "https://…" },
-      aria: { id: "Identifiant unique", label: "Libellé de la réaction", emoji: "Emoji", imageUrl: "URL de l’image personnalisée" },
-      actions: { add: "Ajouter", save: "Enregistrer", delete: "Supprimer", deleteConfirm: "Supprimer cette réaction et toutes les réponses associées ?" },
-      hints: { provideOne: "Fournissez au moins un emoji ou une image. Si les deux sont renseignés, l’image sera affichée.", keepOrBlank: "Laissez l’emoji ou l’URL vide pour conserver la valeur actuelle. Au moins l’un des deux doit être renseigné." },
+      fields: {
+        id: "Identifiant",
+        label: "Libellé",
+        emoji: "Emoji",
+        imageFile: "Fichier image",
+      },
+      placeholders: {
+        id: "ex. bravo-plus",
+        label: "Texte affiché",
+        emoji: "🙂",
+      },
+      aria: {
+        id: "Identifiant unique",
+        label: "Libellé de la réaction",
+        emoji: "Emoji",
+        imageFile: "Téléverser un fichier image",
+      },
+      actions: {
+        add: "Ajouter",
+        save: "Enregistrer",
+        delete: "Supprimer",
+        deleteConfirm: "Supprimer cette réaction et toutes les réponses associées ?",
+      },
+      hints: {
+        provideOne: "Fournissez au moins un emoji ou une image. Si les deux sont renseignés, l’image sera affichée.",
+        keepOrBlank: "Laissez l’emoji ou l’URL vide pour conserver la valeur actuelle. Au moins l’un des deux doit être renseigné.",
+        fileGuidelines: "Fichier PNG, JPG, GIF ou WebP (≤ 5 Mo).",
+      },
       empty: "Aucune réaction n’est configurée pour le moment.",
       item: { identifier: "Identifiant :", moveUp: "Monter", moveDown: "Descendre" },
     },
@@ -684,12 +749,19 @@ export default {
       heading: "Paramètres généraux",
       fields: {
         wikiName: "Nom du wiki",
-        logoUrl: "URL du logo",
+        logoFile: "Logo (fichier)",
         adminWebhook: "Webhook Discord (administration)",
         feedWebhook: "Webhook Discord (flux)",
         footerText: "Texte de bas de page",
         githubRepo: "Dépôt GitHub pour le changelog",
         changelogSource: "Source du changelog",
+      },
+      hints: {
+        logoFile: "Fichier PNG, JPG, GIF ou WebP (≤ 5 Mo).",
+        currentLogo: "Logo actuel",
+      },
+      aria: {
+        logoPreview: "Aperçu du logo actuel",
       },
       placeholders: {
         repo: "owner/repo ou URL https://github.com/...",
@@ -711,12 +783,6 @@ export default {
       availableSr: "Pièces jointes disponibles",
       item: "Pièce jointe",
       previewAlt: "Aperçu de {name}",
-    },
-  },
-  partials: {
-    uploadHelper: {
-      needImage: "Besoin d'une image ?",
-      openManager: "Ouvrir le gestionnaire d'images",
     },
   },
   history: {

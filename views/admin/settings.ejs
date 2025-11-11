@@ -1,11 +1,20 @@
 <% title = t('admin.settings.title'); %>
 <h1><%= t('admin.settings.heading') %></h1>
-<form method="post" class="card">
+<form method="post" class="card" enctype="multipart/form-data">
   <%- include('../partials/csrf_field') %>
   <label><%= t('admin.settings.fields.wikiName') %></label>
   <input type="text" name="wiki_name" value="<%= s.wiki_name %>" />
-  <label><%= t('admin.settings.fields.logoUrl') %></label>
-  <input type="url" name="logo_url" value="<%= s.logo_url %>" />
+  <label><%= t('admin.settings.fields.logoFile') %></label>
+  <% if (s.logo_url) { %>
+    <p class="text-sm text-muted"><%= t('admin.settings.hints.currentLogo') %></p>
+    <img
+      src="<%= s.logo_url %>"
+      alt="<%= t('admin.settings.aria.logoPreview') %>"
+      style="max-height: 72px; display: block; margin-bottom: 0.5rem;"
+    />
+  <% } %>
+  <input type="file" name="logoFile" accept="image/*" />
+  <span class="text-sm text-muted mt-xs"><%= t('admin.settings.hints.logoFile') %></span>
   <label><%= t('admin.settings.fields.adminWebhook') %></label>
   <input type="url" name="admin_webhook_url" value="<%= s.admin_webhook_url %>" />
   <label><%= t('admin.settings.fields.feedWebhook') %></label>

@@ -1930,6 +1930,19 @@ details[open] summary::after {
   margin-top: 0.75rem;
 }
 
+.upload-thumb--file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 0.75rem;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border-soft);
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+}
+
 .drawer-overlay {
   position: fixed;
   inset: 0;

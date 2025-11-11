@@ -15,6 +15,11 @@ export default {
     unexpected: "An unexpected error occurred.",
     forbiddenAction: "You do not have permission to perform this action.",
     forbiddenPage: "You do not have permission to access this page.",
+    csrf: {
+      title: "Action blocked",
+      heading: "Action blocked",
+      message: "Action blocked: unable to verify your security token. Please try again.",
+    },
     '500': {
       title: "Error 500",
       heading: "Error 500",
@@ -24,12 +29,19 @@ export default {
       heading: "General settings",
       fields: {
         wikiName: "Wiki name",
-        logoUrl: "Logo URL",
+        logoFile: "Logo image",
         adminWebhook: "Discord admin webhook",
         feedWebhook: "Discord feed webhook",
         footerText: "Footer text",
         githubRepo: "GitHub repository for changelog",
         changelogSource: "Changelog source",
+      },
+      hints: {
+        logoFile: "PNG, JPG, GIF, or WebP file (≤ 5 MB).",
+        currentLogo: "Current logo",
+      },
+      aria: {
+        logoPreview: "Current wiki logo preview",
       },
       placeholders: {
         repo: "owner/repo or full https://github.com/... URL",
@@ -424,6 +436,36 @@ export default {
         filename: "File name:",
         modified: "Modified:",
       },
+      categories: {
+        general: {
+          title: "Managed uploads",
+          description: "Files uploaded through the admin panel live in /public/uploads and can be reused across the site.",
+        },
+        profiles: {
+          empty: "No profile assets yet.",
+        },
+      },
+      commentAttachments: {
+        title: "Comment attachments",
+        description: "Files submitted with comments are stored under /public/uploads/comments.",
+        empty: "No comment attachments yet.",
+        table: {
+          context: "Context",
+        },
+        details: {
+          file: "File:",
+          mimeType: "Type:",
+          uploaded: "Uploaded:",
+          comment: "Comment:",
+          page: "Page:",
+          commentAuthor: "Author:",
+          commentStatus: "Status:",
+        },
+        actions: {
+          deleteConfirm: "Delete this attachment?",
+        },
+        deleted: "Attachment deleted.",
+      },
       empty: "No images available yet.",
       avatars: { title: "Profile avatars", storedIn: "Files stored in" },
       copySuccess: "Link copied!",
@@ -449,11 +491,34 @@ export default {
       heading: "Emojis & Reactions",
       intro: "Customize the reaction palette shown on pages and comments. Each reaction must have a unique identifier and an emoji or a custom image.",
       add: { title: "Add a reaction" },
-      fields: { id: "Identifier", label: "Label", emoji: "Emoji", imageUrl: "Image URL" },
-      placeholders: { id: "e.g. bravo-plus", label: "Display text", emoji: "🙂", imageUrl: "https://…" },
-      aria: { id: "Unique identifier", label: "Reaction label", emoji: "Emoji", imageUrl: "Custom image URL" },
-      actions: { add: "Add", save: "Save", delete: "Delete", deleteConfirm: "Delete this reaction and all associated responses?" },
-      hints: { provideOne: "Provide at least an emoji or an image. If both are set, the image will be shown.", keepOrBlank: "Leave emoji or URL blank to keep the current value. At least one must be provided." },
+      fields: {
+        id: "Identifier",
+        label: "Label",
+        emoji: "Emoji",
+        imageFile: "Image file",
+      },
+      placeholders: {
+        id: "e.g. bravo-plus",
+        label: "Display text",
+        emoji: "🙂",
+      },
+      aria: {
+        id: "Unique identifier",
+        label: "Reaction label",
+        emoji: "Emoji",
+        imageFile: "Upload an image file",
+      },
+      actions: {
+        add: "Add",
+        save: "Save",
+        delete: "Delete",
+        deleteConfirm: "Delete this reaction and all associated responses?",
+      },
+      hints: {
+        provideOne: "Provide at least an emoji or an image. If both are set, the image will be shown.",
+        keepOrBlank: "Leave emoji or URL blank to keep the current value. At least one must be provided.",
+        fileGuidelines: "PNG, JPG, GIF, or WebP file (≤ 5 MB).",
+      },
       empty: "No reactions configured yet.",
       item: { identifier: "Identifier:", moveUp: "Move up", moveDown: "Move down" },
     },
@@ -684,12 +749,19 @@ export default {
       heading: "General settings",
       fields: {
         wikiName: "Wiki name",
-        logoUrl: "Logo URL",
+        logoFile: "Logo image",
         adminWebhook: "Discord admin webhook",
         feedWebhook: "Discord feed webhook",
         footerText: "Footer text",
         githubRepo: "GitHub repository for changelog",
         changelogSource: "Changelog source",
+      },
+      hints: {
+        logoFile: "PNG, JPG, GIF, or WebP file (≤ 5 MB).",
+        currentLogo: "Current logo",
+      },
+      aria: {
+        logoPreview: "Current wiki logo preview",
       },
       placeholders: {
         repo: "owner/repo or full https://github.com/... URL",
@@ -751,12 +823,6 @@ export default {
       fields: { author: "Name or alias", message: "Message" },
       actions: { save: "Save", cancel: "Cancel", delete: "Delete this comment" },
       deleteConfirm: "Delete this comment? This action is permanent.",
-    },
-  },
-  partials: {
-    uploadHelper: {
-      needImage: "Need an image?",
-      openManager: "Open the image manager",
     },
   },
   twofactor: {

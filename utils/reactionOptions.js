@@ -50,6 +50,12 @@ function normalizeImageUrl(rawUrl) {
   if (!trimmed) {
     return null;
   }
+  if (
+    trimmed.startsWith("/public/uploads/") ||
+    trimmed.startsWith("/uploads/")
+  ) {
+    return trimmed;
+  }
   return normalizeHttpUrl(trimmed, { fieldName: "L'URL de l'image" });
 }
 

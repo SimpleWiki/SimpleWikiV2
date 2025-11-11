@@ -24,87 +24,178 @@
   <div id="uploadMessage" class="mt-sm"></div>
 </div>
 
-<form method="get" class="card mb-md">
-  <div class="flex flex-wrap gap-sm items-end">
-    <label class="stack-form">
-      <span class="text-sm text-muted"><%= t('admin.uploads.search.label') %></span>
-      <input
-        type="text"
-        name="search"
-        value="<%= typeof searchTerm === 'string' ? searchTerm : '' %>"
-        placeholder="<%= t('admin.uploads.search.placeholder') %>"
-        class="flex-basis-260"
-      />
-    </label>
-    <input type="hidden" name="page" value="1" />
-    <input type="hidden" name="perPage" value="<%= pagination.perPage %>" />
-    <button class="btn" data-icon="🔍" type="submit"><%= t('admin.uploads.search.button') %></button>
-    <% if (searchTerm) { %>
-      <a class="btn secondary" href="/admin/uploads"><%= t('admin.uploads.search.reset') %></a>
-    <% } %>
-  </div>
-</form>
-
+<% const generalUploads = Array.isArray(uploads) ? uploads : []; %>
 <% const avatarUploads = Array.isArray(profileUploads) ? profileUploads : []; %>
+<% const commentAttachmentEntries = Array.isArray(commentAttachments) ? commentAttachments : []; %>
 
-<% if (uploads.length) { %>
-  <div class="table-wrap">
-    <table class="data-table" id="uploadsTable">
-      <thead>
-        <tr>
-          <th><%= t('admin.uploads.table.preview') %></th>
-          <th><%= t('admin.uploads.table.details') %></th>
-          <th><%= t('admin.uploads.table.customName') %></th>
-          <th><%= t('admin.uploads.table.actions') %></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% uploads.forEach(upload => { %>
-          <% const displayName = upload.displayName || ''; %>
-          <% const createdAt = upload.createdAt ? fmt.dateTime(upload.createdAt) : '—'; %>
-          <% const sizeLabel = upload.size ? fmt.number(Math.max(1, Math.round(upload.size / 1024))) + ' ' + t('common.size.kb') : '—'; %>
-          <tr>
-            <td>
-              <img src="<%= upload.url %>" alt="" class="upload-thumb" />
-            </td>
-          <td class="leading-snug">
-            <div><strong><%= t('admin.uploads.details.snowflake') %></strong> <code><%= upload.id %></code></div>
-            <div><strong><%= t('admin.uploads.details.originalName') %></strong> <%= upload.originalName %></div>
-            <div><strong><%= t('admin.uploads.details.displayName') %></strong> <%= displayName || '—' %></div>
-            <div><strong><%= t('admin.uploads.details.size') %></strong> <%= sizeLabel %></div>
-            <div><strong><%= t('admin.uploads.details.added') %></strong> <%= createdAt %></div>
-          </td>
-          <td>
-            <form method="post" action="/admin/uploads/<%= upload.id %>/name" class="stack-form">
-              <%- include('../partials/csrf_field') %>
-              <input type="text" name="displayName" value="<%= displayName %>" maxlength="120" placeholder="<%= t('admin.uploads.fields.displayName') %>" />
-              <button class="btn success" data-icon="💾" type="submit"><%= t('admin.uploads.actions.save') %></button>
-            </form>
-          </td>
-          <td>
-            <% const altText = displayName || upload.originalName || ''; %>
-            <div class="upload-actions" data-url="<%= upload.url %>" data-alt="<%= altText %>">
-              <button class="btn copy-upload" data-icon="📋" type="button"><%= t('admin.uploads.actions.copyLink') %></button>
-              <form method="post" action="/admin/uploads/<%= upload.id %>/delete" onsubmit="return confirm(<%= JSON.stringify(t('admin.uploads.actions.deleteConfirm')) %>)">
-                <%- include('../partials/csrf_field') %>
-                <button class="btn unlike" data-icon="🗑️" type="submit"><%= t('admin.uploads.actions.delete') %></button>
-              </form>
-            </div>
-          </td>
-        </tr>
-      <% }) %>
-      </tbody>
-    </table>
+<div class="card mb-md">
+  <div class="flex flex-wrap gap-sm items-end justify-between">
+    <div>
+      <h2><%= t('admin.uploads.categories.general.title') %></h2>
+      <p class="text-sm text-muted mt-xs"><%= t('admin.uploads.categories.general.description') %></p>
+    </div>
+    <form method="get" class="flex flex-wrap gap-sm items-end">
+      <label class="stack-form">
+        <span class="text-sm text-muted"><%= t('admin.uploads.search.label') %></span>
+        <input
+          type="text"
+          name="search"
+          value="<%= typeof searchTerm === 'string' ? searchTerm : '' %>"
+          placeholder="<%= t('admin.uploads.search.placeholder') %>"
+          class="flex-basis-260"
+        />
+      </label>
+      <input type="hidden" name="page" value="1" />
+      <input type="hidden" name="perPage" value="<%= pagination.perPage %>" />
+      <button class="btn" data-icon="🔍" type="submit"><%= t('admin.uploads.search.button') %></button>
+      <% if (searchTerm) { %>
+        <a class="btn secondary" href="/admin/uploads"><%= t('admin.uploads.search.reset') %></a>
+      <% } %>
+    </form>
   </div>
-  <%- include('./paginationControls', { pagination }) %>
-<% } else { %>
-  <p class="card text-muted"><%= t('admin.uploads.empty') %></p>
-<% } %>
+  <% if (generalUploads.length) { %>
+    <div class="table-wrap mt-sm">
+      <table class="data-table" id="uploadsTable">
+        <thead>
+          <tr>
+            <th><%= t('admin.uploads.table.preview') %></th>
+            <th><%= t('admin.uploads.table.details') %></th>
+            <th><%= t('admin.uploads.table.customName') %></th>
+            <th><%= t('admin.uploads.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% generalUploads.forEach((upload) => { %>
+            <% const displayName = upload.displayName || ''; %>
+            <% const createdAt = upload.createdAt ? fmt.dateTime(upload.createdAt) : '—'; %>
+            <% const sizeLabel = upload.size ? fmt.number(Math.max(1, Math.round(upload.size / 1024))) + ' ' + t('common.size.kb') : '—'; %>
+            <tr>
+              <td>
+                <img src="<%= upload.url %>" alt="" class="upload-thumb" />
+              </td>
+              <td class="leading-snug">
+                <div><strong><%= t('admin.uploads.details.snowflake') %></strong> <code><%= upload.id %></code></div>
+                <div><strong><%= t('admin.uploads.details.originalName') %></strong> <%= upload.originalName %></div>
+                <div><strong><%= t('admin.uploads.details.displayName') %></strong> <%= displayName || '—' %></div>
+                <div><strong><%= t('admin.uploads.details.size') %></strong> <%= sizeLabel %></div>
+                <div><strong><%= t('admin.uploads.details.added') %></strong> <%= createdAt %></div>
+              </td>
+              <td>
+                <form method="post" action="/admin/uploads/<%= upload.id %>/name" class="stack-form">
+                  <%- include('../partials/csrf_field') %>
+                  <input type="text" name="displayName" value="<%= displayName %>" maxlength="120" placeholder="<%= t('admin.uploads.fields.displayName') %>" />
+                  <button class="btn success" data-icon="💾" type="submit"><%= t('admin.uploads.actions.save') %></button>
+                </form>
+              </td>
+              <td>
+                <% const altText = displayName || upload.originalName || ''; %>
+                <div class="upload-actions" data-url="<%= upload.url %>" data-alt="<%= altText %>">
+                  <button class="btn copy-upload" data-icon="📋" type="button"><%= t('admin.uploads.actions.copyLink') %></button>
+                  <form method="post" action="/admin/uploads/<%= upload.id %>/delete" onsubmit="return confirm(<%= JSON.stringify(t('admin.uploads.actions.deleteConfirm')) %>)">
+                    <%- include('../partials/csrf_field') %>
+                    <button class="btn unlike" data-icon="🗑️" type="submit"><%= t('admin.uploads.actions.delete') %></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('./paginationControls', { pagination }) %>
+  <% } else { %>
+    <p class="text-muted mt-sm"><%= t('admin.uploads.empty') %></p>
+  <% } %>
+</div>
 
-<% if (avatarUploads.length) { %>
-  <div class="card mb-md">
-    <h2><%= t('admin.uploads.avatars.title') %></h2>
-    <p class="mt-xs text-muted"><%= t('admin.uploads.avatars.storedIn') %> <code>/public/uploads/profiles</code>.</p>
+<div class="card mb-md">
+  <h2><%= t('admin.uploads.commentAttachments.title') %></h2>
+  <p class="text-sm text-muted mt-xs"><%= t('admin.uploads.commentAttachments.description') %></p>
+  <% if (commentAttachmentEntries.length) { %>
+    <div class="table-wrap mt-sm">
+      <table class="data-table" id="commentAttachmentsTable">
+        <thead>
+          <tr>
+            <th><%= t('admin.uploads.table.preview') %></th>
+            <th><%= t('admin.uploads.table.details') %></th>
+            <th><%= t('admin.uploads.commentAttachments.table.context') %></th>
+            <th><%= t('admin.uploads.table.actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% commentAttachmentEntries.forEach((attachment) => { %>
+            <% const createdAt = attachment.createdAt ? fmt.dateTime(attachment.createdAt) : '—'; %>
+            <% const sizeLabel = attachment.size ? fmt.number(Math.max(1, Math.round(attachment.size / 1024))) + ' ' + t('common.size.kb') : '—'; %>
+            <tr>
+              <td>
+                <% if (attachment.isImage && attachment.url) { %>
+                  <img src="<%= attachment.url %>" alt="" class="upload-thumb" />
+                <% } else { %>
+                  <div class="upload-thumb upload-thumb--file" aria-hidden="true">📄</div>
+                <% } %>
+              </td>
+              <td class="leading-snug">
+                <div><strong><%= t('admin.uploads.commentAttachments.details.file') %></strong> <%= attachment.originalName %></div>
+                <div><strong><%= t('admin.uploads.commentAttachments.details.mimeType') %></strong> <%= attachment.mimeType || '—' %></div>
+                <div><strong><%= t('admin.uploads.details.size') %></strong> <%= sizeLabel %></div>
+                <div><strong><%= t('admin.uploads.commentAttachments.details.uploaded') %></strong> <%= createdAt %></div>
+              </td>
+              <td class="leading-snug">
+                <% if (attachment.commentId) { %>
+                  <div>
+                    <strong><%= t('admin.uploads.commentAttachments.details.comment') %></strong>
+                    <% if (attachment.pageSlug) { %>
+                      <a href="/wiki/<%= attachment.pageSlug %>#comment-<%= attachment.commentId %>"><code><%= attachment.commentId %></code></a>
+                    <% } else { %>
+                      <code><%= attachment.commentId %></code>
+                    <% } %>
+                  </div>
+                <% } %>
+                <div>
+                  <strong><%= t('admin.uploads.commentAttachments.details.page') %></strong>
+                  <% if (attachment.pageSlug) { %>
+                    <a href="/wiki/<%= attachment.pageSlug %>">
+                      <%= attachment.pageTitle || attachment.pageSlug %>
+                    </a>
+                  <% } else { %>
+                    <span class="text-muted">—</span>
+                  <% } %>
+                </div>
+                <% if (attachment.commentAuthor) { %>
+                  <div><strong><%= t('admin.uploads.commentAttachments.details.commentAuthor') %></strong> <%= attachment.commentAuthor %></div>
+                <% } %>
+                <% if (attachment.commentStatus) { %>
+                  <div><strong><%= t('admin.uploads.commentAttachments.details.commentStatus') %></strong> <%= attachment.commentStatus %></div>
+                <% } %>
+              </td>
+              <td>
+                <% const altText = attachment.originalName || attachment.filename || ''; %>
+                <div class="upload-actions" data-url="<%= attachment.url %>" data-alt="<%= altText %>">
+                  <button class="btn copy-upload" data-icon="📋" type="button"><%= t('admin.uploads.actions.copyLink') %></button>
+                  <form
+                    method="post"
+                    action="/admin/uploads/comments/<%= attachment.id %>/delete"
+                    onsubmit="return confirm(<%= JSON.stringify(t('admin.uploads.commentAttachments.actions.deleteConfirm')) %>)"
+                  >
+                    <%- include('../partials/csrf_field') %>
+                    <button class="btn unlike" data-icon="🗑️" type="submit"><%= t('admin.uploads.actions.delete') %></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } else { %>
+    <p class="text-muted mt-sm"><%= t('admin.uploads.commentAttachments.empty') %></p>
+  <% } %>
+</div>
+
+<div class="card mb-md">
+  <h2><%= t('admin.uploads.avatars.title') %></h2>
+  <p class="mt-xs text-muted"><%= t('admin.uploads.avatars.storedIn') %> <code>/public/uploads/profiles</code>.</p>
+  <% if (avatarUploads.length) { %>
     <div class="table-wrap">
       <table class="data-table" id="profileUploadsTable">
         <thead>
@@ -138,8 +229,10 @@
         </tbody>
       </table>
     </div>
-  </div>
-<% } %>
+  <% } else { %>
+    <p class="text-muted mt-sm"><%= t('admin.uploads.categories.profiles.empty') %></p>
+  <% } %>
+</div>
 
 <script>
   const i18n = {

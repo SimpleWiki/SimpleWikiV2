@@ -6,7 +6,7 @@
 
 <div class="card mb-md">
   <h2><%= t('admin.reactions.add.title') %></h2>
-  <form method="post" action="/admin/reactions" class="flex flex-wrap gap-sm mt-sm">
+  <form method="post" action="/admin/reactions" class="flex flex-wrap gap-sm mt-sm" enctype="multipart/form-data">
     <%- include('../partials/csrf_field') %>
     <label class="stack-form flex-basis-200">
       <span class="text-sm text-muted"><%= t('admin.reactions.fields.id') %></span>
@@ -40,20 +40,19 @@
       />
     </label>
     <label class="stack-form flex-basis-260">
-      <span class="text-sm text-muted"><%= t('admin.reactions.fields.imageUrl') %></span>
+      <span class="text-sm text-muted"><%= t('admin.reactions.fields.imageFile') %></span>
       <input
-        type="url"
-        name="imageUrl"
-        maxlength="500"
-        placeholder="<%= t('admin.reactions.placeholders.imageUrl') %>"
-        aria-label="<%= t('admin.reactions.aria.imageUrl') %>"
+        type="file"
+        name="imageFile"
+        accept="image/*"
+        aria-label="<%= t('admin.reactions.aria.imageFile') %>"
       />
+      <span class="text-sm text-muted mt-xs"><%= t('admin.reactions.hints.fileGuidelines') %></span>
     </label>
     <div class="stack-form flex-basis-200">
       <span class="text-sm text-muted">&nbsp;</span>
       <button class="btn" type="submit"><%= t('admin.reactions.actions.add') %></button>
     </div>
-    <%- include('../partials/uploadHelper') %>
     <p class="text-sm text-muted" style="flex-basis: 100%;">
       <%= t('admin.reactions.hints.provideOne') %>
     </p>
@@ -101,6 +100,7 @@
           method="post"
           action="/admin/reactions/<%= reaction.id %>/update"
           class="admin-reaction-form"
+          enctype="multipart/form-data"
         >
           <%- include('../partials/csrf_field') %>
           <div class="flex flex-wrap gap-sm">
@@ -126,18 +126,16 @@
               />
             </label>
             <label class="stack-form flex-basis-260">
-              <span class="text-sm text-muted"><%= t('admin.reactions.fields.imageUrl') %></span>
+              <span class="text-sm text-muted"><%= t('admin.reactions.fields.imageFile') %></span>
               <input
-                type="url"
-                name="imageUrl"
-                maxlength="500"
-                value="<%= reaction.imageUrl || '' %>"
-                placeholder="<%= t('admin.reactions.placeholders.imageUrl') %>"
-                aria-label="<%= t('admin.reactions.aria.imageUrl') %>"
+                type="file"
+                name="imageFile"
+                accept="image/*"
+                aria-label="<%= t('admin.reactions.aria.imageFile') %>"
               />
+              <span class="text-sm text-muted mt-xs"><%= t('admin.reactions.hints.fileGuidelines') %></span>
             </label>
           </div>
-          <%- include('../partials/uploadHelper') %>
           <p class="text-sm text-muted mt-sm">
             <%= t('admin.reactions.hints.keepOrBlank') %>
           </p>

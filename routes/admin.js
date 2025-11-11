@@ -3,7 +3,11 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import { all, get, run, randId, savePageFts } from "../db.js";
-import { purgeCommentAttachments } from "../utils/commentAttachments.js";
+import {
+  purgeCommentAttachments,
+  listCommentAttachments,
+  removeCommentAttachment,
+} from "../utils/commentAttachments.js";
 import {
   generateSnowflake,
   decomposeSnowflake,
@@ -174,6 +178,67 @@ const upload = multer({
     }
   },
 });
+
+function handleAdminImageUpload(fieldName = "imageFile") {
+  return (req, res, next) => {
+    upload.single(fieldName)(req, res, (err) => {
+      if (err) {
+        req.adminImageUploadError = err;
+      }
+      next();
+    });
+  };
+}
+
+function respondToAdminImageUploadError(req, res, redirectPath) {
+  if (!req.adminImageUploadError) {
+    return false;
+  }
+  const err = req.adminImageUploadError;
+  const defaultMessage =
+    (req.t && req.t("admin.uploads.errors.upload")) ||
+    "Erreur lors de l'upload";
+  const message =
+    err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE"
+      ? "Les images doivent peser moins de 5 Mo."
+      : err?.message || defaultMessage;
+  pushNotification(req, {
+    type: "error",
+    message,
+  });
+  res.redirect(redirectPath);
+  return true;
+}
+
+async function registerAdminImageUpload(req) {
+  if (!req.file || !req.file.filename) {
+    return null;
+  }
+  const storedName = req.file.filename;
+  const filePath = path.join(uploadDir, storedName);
+  let finalSize = Number.parseInt(req.file.size ?? "0", 10);
+  try {
+    const optimizedSize = await optimizeUpload(
+      filePath,
+      req.file.mimetype,
+      path.extname(storedName),
+    );
+    if (typeof optimizedSize === "number") {
+      finalSize = optimizedSize;
+    }
+  } catch (optimizeError) {
+    console.warn("Optimization failed for admin image", optimizeError);
+  }
+  const uploadId = path.basename(storedName, path.extname(storedName));
+  await recordUpload({
+    id: uploadId,
+    originalName: req.file.originalname,
+    displayName: null,
+    extension: path.extname(storedName),
+    size: Number.isFinite(finalSize) ? finalSize : null,
+  });
+  return `/public/uploads/${storedName}`;
+}
 
 const r = Router();
 
@@ -3292,9 +3357,10 @@ r.get(
   async (req, res) => {
   const searchTerm = (req.query.search || "").trim();
   const normalizedSearch = searchTerm.toLowerCase();
-  const [uploadsList, profileUploads] = await Promise.all([
+  const [uploadsList, profileUploads, commentAttachments] = await Promise.all([
     listUploads(),
     listProfileUploads(),
+    listCommentAttachments(),
   ]);
   const ordered = [...uploadsList].sort(
     (a, b) => (b.mtime || 0) - (a.mtime || 0),
@@ -3325,6 +3391,7 @@ r.get(
     pagination,
     searchTerm,
     profileUploads,
+    commentAttachments,
   });
   },
 );
@@ -3387,6 +3454,47 @@ r.post(
   },
 );
 
+r.post(
+  "/uploads/comments/:id/delete",
+  requirePermission(["can_manage_uploads", "can_delete_files"]),
+  async (req, res) => {
+    const attachment = await get(
+      `SELECT ca.comment_snowflake_id,
+              ca.original_name,
+              ca.file_path,
+              c.page_id,
+              p.slug_id
+         FROM comment_attachments ca
+    LEFT JOIN comments c ON c.snowflake_id = ca.comment_snowflake_id
+    LEFT JOIN pages p ON p.id = c.page_id
+        WHERE ca.snowflake_id=?`,
+      [req.params.id],
+    );
+    await removeCommentAttachment(req.params.id);
+    const ip = getClientIp(req);
+    await sendAdminEvent(
+      "Pièce jointe supprimée",
+      {
+        user: req.session.user?.username || null,
+        extra: {
+          ip,
+          attachmentId: req.params.id,
+          commentId: attachment?.comment_snowflake_id || null,
+          pageSlug: attachment?.slug_id || null,
+          originalName: attachment?.original_name || null,
+          filePath: attachment?.file_path || null,
+        },
+      },
+      { includeScreenshot: false },
+    );
+    pushNotification(req, {
+      type: "success",
+      message: req.t("admin.uploads.commentAttachments.deleted"),
+    });
+    res.redirect("/admin/uploads");
+  },
+);
+
 // reactions
 r.get(
   "/reactions",
@@ -3400,14 +3508,22 @@ r.get(
 r.post(
   "/reactions",
   requirePermission(["can_manage_settings", "can_manage_features"]),
+  handleAdminImageUpload("imageFile"),
   async (req, res) => {
+    if (respondToAdminImageUploadError(req, res, "/admin/reactions")) {
+      return;
+    }
     try {
-      const reaction = await createReactionOption({
+      const payload = {
         id: req.body?.id,
         label: req.body?.label,
         emoji: req.body?.emoji,
-        imageUrl: req.body?.imageUrl,
-      });
+      };
+      const uploadedImageUrl = await registerAdminImageUpload(req);
+      if (uploadedImageUrl) {
+        payload.imageUrl = uploadedImageUrl;
+      }
+      const reaction = await createReactionOption(payload);
       const ip = getClientIp(req);
       await sendAdminEvent(
         "Réaction ajoutée",
@@ -3443,14 +3559,22 @@ r.post(
 r.post(
   "/reactions/:key/update",
   requirePermission(["can_manage_settings", "can_manage_features"]),
+  handleAdminImageUpload("imageFile"),
   async (req, res) => {
+    if (respondToAdminImageUploadError(req, res, "/admin/reactions")) {
+      return;
+    }
     const reactionKey = req.params.key;
     try {
-      const reaction = await updateReactionOption(reactionKey, {
+      const payload = {
         label: req.body?.label,
         emoji: req.body?.emoji,
-        imageUrl: req.body?.imageUrl,
-      });
+      };
+      const uploadedImageUrl = await registerAdminImageUpload(req);
+      if (uploadedImageUrl) {
+        payload.imageUrl = uploadedImageUrl;
+      }
+      const reaction = await updateReactionOption(reactionKey, payload);
       const ip = getClientIp(req);
       await sendAdminEvent(
         "Réaction mise à jour",
@@ -3575,9 +3699,19 @@ r.get(
 r.post(
   "/settings",
   requirePermission(["can_manage_settings", "can_update_general_settings"]),
+  handleAdminImageUpload("logoFile"),
   async (req, res) => {
+  if (respondToAdminImageUploadError(req, res, "/admin/settings")) {
+    // Error already reported and redirected.
+    return;
+  }
   try {
-    const updated = await updateSiteSettingsFromForm(req.body);
+    const payload = { ...req.body };
+    const uploadedLogoUrl = await registerAdminImageUpload(req);
+    if (uploadedLogoUrl) {
+      payload.logo_url = uploadedLogoUrl;
+    }
+    const updated = await updateSiteSettingsFromForm(payload);
     const ip = getClientIp(req);
     await sendAdminEvent(
       "Paramètres mis à jour",
@@ -4766,15 +4900,23 @@ r.get(
 r.post(
   "/badges/success",
   requirePermission(["can_manage_badges", "can_create_badges"]),
+  handleAdminImageUpload("imageFile"),
   async (req, res) => {
+    if (respondToAdminImageUploadError(req, res, "/admin/badges")) {
+      return;
+    }
     try {
-      const badge = await createAchievementBadge({
+      const payload = {
         criterionKey: req.body?.criterionKey,
         name: req.body?.name,
         description: req.body?.description,
         emoji: req.body?.emoji,
-        imageUrl: req.body?.imageUrl,
-      });
+      };
+      const uploadedImageUrl = await registerAdminImageUpload(req);
+      if (uploadedImageUrl) {
+        payload.imageUrl = uploadedImageUrl;
+      }
+      const badge = await createAchievementBadge(payload);
       const ip = getClientIp(req);
       await sendAdminEvent(
         "Badge de succès créé",
@@ -4811,16 +4953,24 @@ r.post(
 r.post(
   "/badges/success/:badgeId/update",
   requirePermission(["can_manage_badges", "can_edit_badges"]),
+  handleAdminImageUpload("imageFile"),
   async (req, res) => {
+    if (respondToAdminImageUploadError(req, res, "/admin/badges")) {
+      return;
+    }
     const badgeId = req.params.badgeId;
     try {
-      const badge = await updateAchievementBadge(badgeId, {
+      const payload = {
         criterionKey: req.body?.criterionKey,
         name: req.body?.name,
         description: req.body?.description,
         emoji: req.body?.emoji,
-        imageUrl: req.body?.imageUrl,
-      });
+      };
+      const uploadedImageUrl = await registerAdminImageUpload(req);
+      if (uploadedImageUrl) {
+        payload.imageUrl = uploadedImageUrl;
+      }
+      const badge = await updateAchievementBadge(badgeId, payload);
       const ip = getClientIp(req);
       await sendAdminEvent(
         "Badge de succès mis à jour",
@@ -4898,14 +5048,22 @@ r.post(
 r.post(
   "/badges",
   requirePermission(["can_manage_badges", "can_create_badges"]),
+  handleAdminImageUpload("imageFile"),
   async (req, res) => {
+    if (respondToAdminImageUploadError(req, res, "/admin/badges")) {
+      return;
+    }
     try {
-      const badge = await createBadge({
+      const payload = {
         name: req.body?.name,
         description: req.body?.description,
         emoji: req.body?.emoji,
-        imageUrl: req.body?.imageUrl,
-      });
+      };
+      const uploadedImageUrl = await registerAdminImageUpload(req);
+      if (uploadedImageUrl) {
+        payload.imageUrl = uploadedImageUrl;
+      }
+      const badge = await createBadge(payload);
       const ip = getClientIp(req);
       await sendAdminEvent(
         "Badge créé",
@@ -4941,15 +5099,23 @@ r.post(
 r.post(
   "/badges/:badgeId/update",
   requirePermission(["can_manage_badges", "can_edit_badges"]),
+  handleAdminImageUpload("imageFile"),
   async (req, res) => {
+    if (respondToAdminImageUploadError(req, res, "/admin/badges")) {
+      return;
+    }
     const badgeId = req.params.badgeId;
     try {
-      const badge = await updateBadge(badgeId, {
+      const payload = {
         name: req.body?.name,
         description: req.body?.description,
         emoji: req.body?.emoji,
-        imageUrl: req.body?.imageUrl,
-      });
+      };
+      const uploadedImageUrl = await registerAdminImageUpload(req);
+      if (uploadedImageUrl) {
+        payload.imageUrl = uploadedImageUrl;
+      }
+      const badge = await updateBadge(badgeId, payload);
       const ip = getClientIp(req);
       await sendAdminEvent(
         "Badge mis à jour",

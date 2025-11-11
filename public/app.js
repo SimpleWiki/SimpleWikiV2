@@ -152,6 +152,39 @@ function applyCsrfHeader(headers = {}) {
   return headers;
 }
 
+function ensureMultipartActionsIncludeCsrf() {
+  const token = getCsrfToken();
+  if (!token) {
+    return;
+  }
+  const forms = document.querySelectorAll("form[enctype='multipart/form-data']");
+  if (!forms.length) {
+    return;
+  }
+  forms.forEach((form) => {
+    if (!(form instanceof HTMLFormElement)) {
+      return;
+    }
+    if (form.dataset.csrfActionToken === token) {
+      return;
+    }
+    const actionAttr = form.getAttribute("action") || window.location.pathname;
+    let absoluteUrl;
+    try {
+      absoluteUrl = new URL(actionAttr, window.location.origin);
+    } catch (err) {
+      absoluteUrl = new URL(window.location.href);
+    }
+    absoluteUrl.searchParams.set("_csrf", token);
+    const normalized =
+      absoluteUrl.origin === window.location.origin
+        ? `${absoluteUrl.pathname}${absoluteUrl.search}${absoluteUrl.hash}`
+        : absoluteUrl.toString();
+    form.setAttribute("action", normalized);
+    form.dataset.csrfActionToken = token;
+  });
+}
+
 function initCookieBanner() {
   const banner = document.querySelector("[data-cookie-banner]");
   if (!banner) {
@@ -222,6 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initIpLinkForm();
   initIpClaimForm();
   initCookieBanner();
+  ensureMultipartActionsIncludeCsrf();
 });
 
 function enhanceIconButtons() {
