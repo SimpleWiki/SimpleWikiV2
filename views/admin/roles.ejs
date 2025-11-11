@@ -93,7 +93,12 @@
               </div>
               <% const hasRoleColor = roleColorPresentation && roleColorPresentation.hasColor; %>
               <% const previewClasses = ['role-color-preview']; if (!hasRoleColor) { previewClasses.push('is-empty'); } %>
-              <div class="<%= previewClasses.join(' ') %>" data-role-color-preview aria-hidden="true">
+              <div
+                class="<%= previewClasses.join(' ') %>"
+                data-role-color-preview
+                aria-hidden="true"
+                style="<%= hasRoleColor ? roleColorPresentation.style : '' %>"
+              >
                 <span
                   class="role-color-chip role-color-visual <%= hasRoleColor ? roleColorPresentation.className : '' %>"
                   data-role-color-chip
@@ -546,6 +551,11 @@
       const chip = preview.querySelector('[data-role-color-chip]');
       const label = preview.querySelector('[data-role-color-label]');
       preview.classList.toggle('is-empty', !presentation.hasColor);
+      if (presentation.hasColor && presentation.style) {
+        preview.setAttribute('style', presentation.style);
+      } else {
+        preview.removeAttribute('style');
+      }
       if (chip) {
         COLOR_CLASS_LIST.forEach((className) => chip.classList.remove(className));
         if (presentation.hasColor && presentation.className) {
@@ -623,6 +633,12 @@
 
         const input = document.createElement('input');
         input.type = 'color';
+        const mode = collection?.dataset.roleColorCollection;
+        if (mode === 'gradient') {
+          input.name = 'color_gradient[]';
+        } else if (mode === 'rainbow') {
+          input.name = 'color_rainbow[]';
+        }
         input.value = sanitized;
         input.dataset.roleColorInput = '';
         picker.appendChild(input);

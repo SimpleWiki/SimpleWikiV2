@@ -1198,6 +1198,34 @@ input[type="radio"] {
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.02);
   color: var(--color-text);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.role-color-preview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: var(--role-gradient, none);
+  background-size: var(--role-background-size, 100% 100%);
+  background-position: var(--role-background-position, 50% 50%);
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity var(--transition-base), background var(--transition-base);
+  mix-blend-mode: normal;
+  animation: var(--role-animation, none);
+  z-index: 0;
+}
+
+.role-color-preview:not(.is-empty)::after {
+  opacity: 0.45;
+}
+
+.role-color-preview > * {
+  position: relative;
+  z-index: 1;
 }
 
 .role-color-chip {
@@ -1231,6 +1259,10 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.role-color-fields[hidden] {
+  display: none;
 }
 
 .role-color-item {
