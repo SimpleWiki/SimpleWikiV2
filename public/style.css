@@ -1179,6 +1179,153 @@ input[type="radio"] {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.role-color-visual {
+  background-color: var(--role-color-1, var(--role-fallback-color, rgba(255, 255, 255, 0.08)));
+  background-image: var(--role-gradient, none);
+  background-size: var(--role-background-size, 100% 100%);
+  background-position: var(--role-background-position, 50% 50%);
+  background-repeat: no-repeat;
+  animation: var(--role-animation, none);
+}
+
+.role-color-preview {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--color-text);
+}
+
+.role-color-chip {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.role-color-value {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: inherit;
+}
+
+.role-color-preview.is-empty {
+  color: var(--color-text-muted);
+}
+
+.role-color-preview.is-empty .role-color-chip {
+  background: rgba(255, 255, 255, 0.04);
+  background-image: none;
+  animation: none;
+}
+
+.role-color-fields,
+.role-color-collection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.role-color-item {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.role-color-picker {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--color-text);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.role-color-picker:focus-within,
+.role-color-picker:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2);
+}
+
+.role-color-picker input[type="color"] {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: 0.75rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.role-color-picker-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.role-color-picker-value {
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.role-color-remove {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color var(--transition-base), background var(--transition-base);
+}
+
+.role-color-remove:hover:not(.is-disabled) {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.role-color-remove:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+}
+
+.role-color-remove.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.role-color-collection-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.role-color-add-button {
+  padding-inline: 0.85rem;
+}
+
 .role-choice .badge {
   font-size: 0.75rem;
   background: rgba(255, 255, 255, 0.06);
@@ -1386,6 +1533,128 @@ input[type="radio"] {
   border-radius: var(--radius-sm);
   border: 1px dashed rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.02);
+}
+
+.markdown-preview pre {
+  margin: 0.6rem 0;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-sm);
+  padding: 0.9rem;
+  overflow-x: auto;
+}
+
+.markdown-preview pre code {
+  background: none;
+  padding: 0;
+}
+
+.markdown-preview code {
+  font-size: 0.92rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.markdown-preview blockquote {
+  border-left: 3px solid var(--color-accent);
+  margin: 0.8rem 0;
+  padding-left: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: var(--radius-sm);
+  margin: 0.8rem 0;
+  overflow: hidden;
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 0.45rem 0.8rem;
+  text-align: left;
+}
+
+.markdown-preview th {
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
+}
+
+.markdown-preview hr {
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.md-callout {
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 0.85rem 1rem;
+  margin: 0.6rem 0;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.md-callout-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.md-callout-body {
+  margin-top: 0.35rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.md-callout-info {
+  border-left: 4px solid var(--color-accent);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.md-callout-warning {
+  border-left: 4px solid var(--color-warning);
+  background: rgba(250, 204, 21, 0.12);
+}
+
+.md-callout-success {
+  border-left: 4px solid var(--color-success);
+  background: rgba(52, 211, 153, 0.12);
+}
+
+details {
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  margin: 0.6rem 0;
+  padding: 0.2rem 0.9rem 0.8rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details summary::marker {
+  display: none;
+}
+
+.md-spoiler summary::after,
+.md-details summary::after {
+  content: " ▾";
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+details[open] summary::after {
+  content: " ▴";
 }
 
 .visual-editor-shell {
